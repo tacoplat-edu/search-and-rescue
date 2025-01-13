@@ -1,2 +1,2 @@
 # search-and-rescue
-MTE 380 Course Projects
+MTE 380 Course Project
