@@ -10,13 +10,13 @@ capture.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
 while True:
     retval, image = capture.read()
 
-    lower, upper = np.uint8([5,5,5]), np.uint8([0,0,0])
+    lower, upper = np.uint8([5, 5, 5]), np.uint8([0, 0, 0])
     mask = cv2.inRange(image, lower, upper)
-    
+
     cv2.imshow("Mask", mask)
     cv2.imshow("Image", image)
 
-    if cv2.waitKey(FEED_WAIT_DELAY_MS) & 0xff == ord("q"):
+    if cv2.waitKey(FEED_WAIT_DELAY_MS) & 0xFF == ord("q"):
         break
 
 capture.release()
