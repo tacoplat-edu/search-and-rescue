@@ -1,7 +1,7 @@
 from models.devices import devices 
 
 class ServoController():
-    def __init__(self, pin) -> None:
+    def __init__(self) -> None:
         self.active_flag = False
         self.servo = devices.servo_motor
         self.servo.angle = 0  # Initialize the servo angle

@@ -2,7 +2,7 @@ from models.devices import devices
 from servo import ServoController
 from motion import MotionController
 
-gripper = ServoController(pin=17)
+gripper = ServoController()
 motion = MotionController()
 button = devices.action_button
 
