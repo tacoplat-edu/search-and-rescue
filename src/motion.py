@@ -32,6 +32,9 @@ class MotionController():
         self.left_motor.stop()
         self.right_motor.stop()
 
+    def reverse(self, speed: float):
+        self.set_reverse_speed(speed)
+
     def move(self, distance: float):
         rotations_needed = distance / self.wheel_circumference
         current_rotations = 0
