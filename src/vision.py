@@ -7,7 +7,6 @@ from models.devices import DeviceConfiguration
 from helpers.vision import get_dot_locations
 
 FEED_WAIT_DELAY_MS = 1
-NUM_DOTS = 3
 
 class VisionProcessor:
     capture: cv2.VideoCapture
@@ -38,7 +37,7 @@ class VisionProcessor:
 
         return cv2.bitwise_and(image, image, mask=mask)
 
-    def get_path_curvature(self, image: cv2.typing.MatLike, mask: cv2.typing.MatLike):
+    def get_path_curvature(self, mask: cv2.typing.MatLike):
         grayscale = cv2.cvtColor(mask, cv2.COLOR_BGR2GRAY)
 
         contours, _ = cv2.findContours(grayscale, cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE)
@@ -46,27 +45,14 @@ class VisionProcessor:
         if contours:
             primary_contour = max(contours, key=cv2.contourArea)
 
-            dist_transform = cv2.distanceTransform(grayscale, cv2.DIST_L2, 5)
-            cv2.normalize(dist_transform, dist_transform, 0, 1.0, cv2.NORM_MINMAX)
-
-            _, ridge = cv2.threshold(dist_transform, 0.5*dist_transform.max(), 255, 0)
-            ridge = ridge.astype(np.uint8)
-
-            centreline = cv2.ximgproc.thinning(ridge)
-
-            points = np.column_stack(np.where(centreline > 0))
-
-            if len(points) < len(self.y_locs):
-                return None
-
-            points = sorted(points, key=lambda p: p[0])
-
-            x_locs = []
+            locs = []
             for i in range(len(self.y_locs)):
-                norm_i = int(i * len(points) / len(self.y_locs))
-                x_locs.append(points[norm_i][1])
+                abs_y = self.y_locs[i]
 
-            locs = list(zip(x_locs, self.y_locs))
+                contour_points = [pt[0] for pt in primary_contour if pt[0][1] == abs_y]
+                if contour_points:
+                    abs_x = int(np.mean([pt[0] for pt in contour_points]))
+                    locs.append((abs_x, abs_y))
 
             return primary_contour, locs
 
@@ -77,12 +63,16 @@ class VisionProcessor:
             _, image = self.capture.read() # BGR
 
             mask = self.get_path_mask(image)
-            path, locs = self.get_path_curvature(image, mask)
+            path, path_locs = self.get_path_curvature(mask)
+
+            image_locs = [(int(self.capture.get(cv2.CAP_PROP_FRAME_WIDTH) // 2), y_loc) for y_loc in self.y_locs]
+            for loc in image_locs:
+                cv2.circle(image, loc, 6, (255,0,0))
 
             if path is not None:
                 cv2.drawContours(image, path, -1, (0,255,0), 2)
-                if locs is not None:
-                    for loc in locs:
+                if path_locs is not None:
+                    for loc in path_locs:
                         cv2.circle(image, loc, 6, (255,0,255))
 
             cv2.imshow("Image", image)
