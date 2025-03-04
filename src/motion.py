@@ -38,6 +38,7 @@ class MotionController():
     def move(self, distance: float):
         rotations_needed = distance / self.wheel_circumference
         current_rotations = 0
+        # idk how to do this with gpiozero, maybe a motor encoder issue?
         while True:
             self.left_motor.forward()
             self.right_motor.forward()
