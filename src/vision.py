@@ -4,7 +4,7 @@ import numpy as np
 from typing import Optional
 
 from models.devices import DeviceConfiguration
-from helpers.vision import get_dot_locations, draw_dots
+from helpers.vision import get_dot_locations
 
 FEED_WAIT_DELAY_MS = 1
 NUM_DOTS = 3
@@ -12,6 +12,7 @@ NUM_DOTS = 3
 class VisionProcessor:
     capture: cv2.VideoCapture
     devices: Optional[DeviceConfiguration]
+    y_locs: list[int]
 
     def __init__(
         self,
@@ -23,6 +24,8 @@ class VisionProcessor:
             self.devices = devices
         for k, v in config_params.items():
             self.capture.set(k, v)
+        
+        self.y_locs = get_dot_locations(self.capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
     def get_path_mask(self, image: cv2.typing.MatLike) -> cv2.typing.MatLike:
         hsv_image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
@@ -43,21 +46,29 @@ class VisionProcessor:
         if contours:
             primary_contour = max(contours, key=cv2.contourArea)
 
-            x, y, w, h = cv2.boundingRect(primary_contour)
+            dist_transform = cv2.distanceTransform(grayscale, cv2.DIST_L2, 5)
+            cv2.normalize(dist_transform, dist_transform, 0, 1.0, cv2.NORM_MINMAX)
 
-            if w > 10 and h > 10:
-                mask = np.zeros((h, w), dtype=np.uint8)
-                adjusted_contour = primary_contour - [x, y]
+            _, ridge = cv2.threshold(dist_transform, 0.5*dist_transform.max(), 255, 0)
+            ridge = ridge.astype(np.uint8)
 
-                cv2.drawContours(mask, [adjusted_contour], -1, 255, thickness=1)
+            centreline = cv2.ximgproc.thinning(ridge)
 
-                locs = get_dot_locations(mask, (
-                    self.capture.get(cv2.CAP_PROP_FRAME_WIDTH),
-                    self.capture.get(cv2.CAP_PROP_FRAME_HEIGHT)
-                ))
-                draw_dots(image, locs)
+            points = np.column_stack(np.where(centreline > 0))
 
-            return primary_contour
+            if len(points) < len(self.y_locs):
+                return None
+
+            points = sorted(points, key=lambda p: p[0])
+
+            x_locs = []
+            for i in range(len(self.y_locs)):
+                norm_i = int(i * len(points) / len(self.y_locs))
+                x_locs.append(points[norm_i][1])
+
+            locs = list(zip(x_locs, self.y_locs))
+
+            return primary_contour, locs
 
         return None
 
@@ -66,16 +77,13 @@ class VisionProcessor:
             _, image = self.capture.read() # BGR
 
             mask = self.get_path_mask(image)
-            curvature = self.get_path_curvature(image, mask)
+            path, locs = self.get_path_curvature(image, mask)
 
-            locs = get_dot_locations(image, (
-                self.capture.get(cv2.CAP_PROP_FRAME_WIDTH),
-                self.capture.get(cv2.CAP_PROP_FRAME_HEIGHT)
-            ))
-            draw_dots(image, locs)
-
-            if curvature is not None:
-                cv2.drawContours(image, curvature, -1, (0,255,0), 2)
+            if path is not None:
+                cv2.drawContours(image, path, -1, (0,255,0), 2)
+                if locs is not None:
+                    for loc in locs:
+                        cv2.circle(image, loc, 6, (255,0,255))
 
             cv2.imshow("Image", image)
             
