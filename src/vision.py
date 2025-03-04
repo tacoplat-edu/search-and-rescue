@@ -38,7 +38,11 @@ class VisionProcessor:
 
         return cv2.bitwise_and(image, image, mask=mask)
 
-    def get_path_curvature(self, mask: cv2.typing.MatLike):
+    """
+        Returns the path contour and a list of coordinates of points (purple) on the 
+        centreline with the same y-values as the reference coordinates (blue).
+    """
+    def get_path_data(self, mask: cv2.typing.MatLike) -> tuple[cv2.typing.MatLike, list[tuple[int, int]]]:
         if mask is None: return None, None
 
         grayscale = cv2.cvtColor(mask, cv2.COLOR_BGR2GRAY)
@@ -56,6 +60,8 @@ class VisionProcessor:
                     abs_x = int(np.mean([pt[0] for pt in contour_points]))
                     locs.append((abs_x, abs_y))
 
+                if not locs:
+                    return primary_contour, None
             return primary_contour, locs
 
         return None, None
@@ -65,7 +71,7 @@ class VisionProcessor:
             _, image = self.capture.read() # BGR
 
             path_mask = self.get_path_mask(image)
-            path, path_locs = self.get_path_curvature(path_mask)
+            path, path_locs = self.get_path_data(path_mask)
 
             image_locs = [(int(self.capture.get(cv2.CAP_PROP_FRAME_WIDTH) // 2), y_loc) for y_loc in self.y_locs]
             for loc in image_locs:
@@ -74,8 +80,9 @@ class VisionProcessor:
             if path is not None:
                 cv2.drawContours(image, path, -1, (0,255,0), 2)
                 if path_locs is not None:
-                    for loc in path_locs:
-                        cv2.circle(image, loc, 6, (255,0,255))
+                    for i in range(len(path_locs)):
+                        cv2.circle(image, path_locs[i], 6, (255,0,255))
+                    print(path_locs[-1][0] - image_locs[-1][0])
 
             cv2.imshow("Image", image)
             
