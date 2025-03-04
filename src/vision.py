@@ -4,6 +4,7 @@ import numpy as np
 from typing import Optional
 
 from models.devices import DeviceConfiguration
+from models.rescue import RescueState
 from helpers.vision import get_dot_locations
 
 FEED_WAIT_DELAY_MS = 1
@@ -11,6 +12,7 @@ FEED_WAIT_DELAY_MS = 1
 class VisionProcessor:
     capture: cv2.VideoCapture
     devices: Optional[DeviceConfiguration]
+    rescue_state: RescueState
     y_locs: list[int]
 
     def __init__(
@@ -19,6 +21,7 @@ class VisionProcessor:
         config_params: dict[int, float],
     ) -> None:
         self.capture = cv2.VideoCapture(0)
+        self.rescue_state = RescueState()
         if devices:
             self.devices = devices
         for k, v in config_params.items():
@@ -76,6 +79,12 @@ class VisionProcessor:
             reference_locs = [(int(self.capture.get(cv2.CAP_PROP_FRAME_WIDTH) // 2), y_loc) for y_loc in self.y_locs]
             for loc in reference_locs:
                 cv2.circle(image, loc, 6, (255,0,0))
+
+            if not self.rescue_state.is_rescue_complete:
+                if not self.rescue_state.is_holding_figure:
+                    print("detect target")
+                else:
+                    print("detect green zones")
 
             if path is not None:
                 cv2.drawContours(image, path, -1, (0,255,0), 2)
