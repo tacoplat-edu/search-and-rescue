@@ -73,8 +73,8 @@ class VisionProcessor:
             path_mask = self.get_path_mask(image)
             path, path_locs = self.get_path_data(path_mask)
 
-            image_locs = [(int(self.capture.get(cv2.CAP_PROP_FRAME_WIDTH) // 2), y_loc) for y_loc in self.y_locs]
-            for loc in image_locs:
+            reference_locs = [(int(self.capture.get(cv2.CAP_PROP_FRAME_WIDTH) // 2), y_loc) for y_loc in self.y_locs]
+            for loc in reference_locs:
                 cv2.circle(image, loc, 6, (255,0,0))
 
             if path is not None:
@@ -82,7 +82,9 @@ class VisionProcessor:
                 if path_locs is not None:
                     for i in range(len(path_locs)):
                         cv2.circle(image, path_locs[i], 6, (255,0,255))
-                    print(path_locs[-1][0] - image_locs[-1][0])
+                    print(path_locs[-1][0] - reference_locs[-1][0])
+            else:
+                print("Robot is off track")
 
             cv2.imshow("Image", image)
             
