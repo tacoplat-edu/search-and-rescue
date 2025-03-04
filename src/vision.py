@@ -27,6 +27,7 @@ class VisionProcessor:
         self.y_locs = get_dot_locations(self.capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
     def get_path_mask(self, image: cv2.typing.MatLike) -> cv2.typing.MatLike:
+        if image is None: return None
         hsv_image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
         red1_lower, red1_upper = np.uint8([0, 100, 30]), np.uint8([10, 255, 255])
         red2_lower, red2_upper = np.uint8([160, 100, 30]), np.uint8([180, 255, 255])
@@ -38,10 +39,11 @@ class VisionProcessor:
         return cv2.bitwise_and(image, image, mask=mask)
 
     def get_path_curvature(self, mask: cv2.typing.MatLike):
+        if mask is None: return None, None
+
         grayscale = cv2.cvtColor(mask, cv2.COLOR_BGR2GRAY)
 
         contours, _ = cv2.findContours(grayscale, cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE)
-
         if contours:
             primary_contour = max(contours, key=cv2.contourArea)
 
@@ -56,14 +58,14 @@ class VisionProcessor:
 
             return primary_contour, locs
 
-        return None
+        return None, None
 
     def run(self):
         while True:
             _, image = self.capture.read() # BGR
 
-            mask = self.get_path_mask(image)
-            path, path_locs = self.get_path_curvature(mask)
+            path_mask = self.get_path_mask(image)
+            path, path_locs = self.get_path_curvature(path_mask)
 
             image_locs = [(int(self.capture.get(cv2.CAP_PROP_FRAME_WIDTH) // 2), y_loc) for y_loc in self.y_locs]
             for loc in image_locs:
