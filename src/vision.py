@@ -81,7 +81,7 @@ class VisionProcessor:
                 cv2.circle(image, loc, 6, (255,0,0))
 
             if not self.rescue_state.is_rescue_complete:
-                if not self.rescue_state.is_holding_figure:
+                if not self.rescue_state.is_figure_held:
                     print("detect target")
                 else:
                     print("detect green zones")
