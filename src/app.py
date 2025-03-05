@@ -1,4 +1,5 @@
 import os
+
 os.environ["OPENCV_VIDEOIO_MSMF_ENABLE_HW_TRANSFORMS"] = "0"
 import cv2
 
@@ -9,13 +10,14 @@ from motion import MotionController
 from models.devices import devices
 
 vp = VisionProcessor(
-    devices, {
+    devices,
+    {
         cv2.CAP_PROP_FRAME_WIDTH: 1280,
         cv2.CAP_PROP_FRAME_HEIGHT: 720,
-    }
+    },
 )
 
-gripper = ServoController()
+""" gripper = ServoController()
 motion = MotionController()
 button = devices.action_button
 
@@ -26,15 +28,7 @@ def test_run():
     gripper.release_grip()
     motion.turn()
 
-button.when_pressed = test_run
+button.when_pressed = test_run """
 
 # Uncomment when needed
 vp.run()
-
-
-
-    
-
-
-
-

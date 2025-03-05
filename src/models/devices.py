@@ -25,7 +25,7 @@ devices = (
             Wheel.LEFT: gpiozero.Motor(23),
             Wheel.RIGHT: gpiozero.Motor(17),
         },
-        servo_motor=gpiozero.AngularServo(12, min_angle = -90, max_angle = 90),
+        servo_motor=gpiozero.AngularServo(12, min_angle=-90, max_angle=90),
         action_button=gpiozero.Button(24),
     )
 )

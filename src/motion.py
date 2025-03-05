@@ -1,13 +1,14 @@
-import math 
+import math
 
 from models.devices import devices
 from models.wheel import Wheel
 
-class MotionController():
+
+class MotionController:
     def __init__(self) -> None:
         self.left_motor = devices.wheel_motors[Wheel.LEFT]
         self.right_motor = devices.wheel_motors[Wheel.RIGHT]
-        self.wheel_circumference = 2 * math.pi * 2 # 20 mm radius
+        self.wheel_circumference = 2 * math.pi * 2  # 20 mm radius
 
     def set_motor_speed(self, speed: float):
         self.left_motor.forward(speed)
@@ -24,7 +25,7 @@ class MotionController():
     def set_left_turn_speed(self, speed: float):
         self.left_motor.backward(speed)
         self.right_motor.forward(speed)
-        
+
     def start(self, speed: float):
         self.set_motor_speed(speed)
 
