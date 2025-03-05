@@ -1,9 +1,9 @@
 import cv2
 import numpy as np
 
-from typing import Optional
+import math
 
-from models.devices import DeviceConfiguration
+from motion import MotionController
 from models.rescue import RescueState
 from helpers.vision import get_dot_locations
 
@@ -12,19 +12,19 @@ FEED_WAIT_DELAY_MS = 1
 
 class VisionProcessor:
     capture: cv2.VideoCapture
-    devices: Optional[DeviceConfiguration]
+    motion: MotionController
     rescue_state: RescueState
     y_locs: list[int]
 
     def __init__(
         self,
-        devices: Optional[DeviceConfiguration],
+        motion: MotionController,
         config_params: dict[int, float],
     ) -> None:
         self.capture = cv2.VideoCapture(0)
+        self.motion = motion
         self.rescue_state = RescueState()
-        if devices:
-            self.devices = devices
+
         for k, v in config_params.items():
             self.capture.set(k, v)
 
@@ -43,7 +43,7 @@ class VisionProcessor:
 
         return cv2.bitwise_and(image, image, mask=mask)
 
-    def get_mask_color(self, image: cv2.typing.MatLike) -> str:
+    """ def get_mask_color(self, image: cv2.typing.MatLike) -> str:
         if image is None:
             return None
 
@@ -68,15 +68,35 @@ class VisionProcessor:
         elif green_count > red_count and green_count > blue_count:
             return "green"
         else:
-            return None
+            return None """
+
+    """
+        Detect blue, to trigger pickup.
+    """
 
     def get_danger_mask(self, image: cv2.typing.MatLike) -> cv2.typing.MatLike:
-        # TODO: Implememt this method for future checkins
-        pass
+        if image is None:
+            return None
+        hsv_image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+
+        blue_lower, blue_upper = np.uint8([100, 100, 30]), np.uint8([140, 255, 255])
+        mask = cv2.inRange(hsv_image, blue_lower, blue_upper)
+
+        return cv2.bitwise_and(image, image, mask=mask)
+
+    """
+        Detect green, to trigger drop-off.
+    """
 
     def get_safe_mask(self, image: cv2.typing.MatLike) -> cv2.typing.MatLike:
-        # TODO: Implement this method for future checkins
-        pass
+        if image is None:
+            return None
+        hsv_image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+
+        green_lower, green_upper = np.uint8([40, 100, 30]), np.uint8([80, 255, 255])
+        mask = cv2.inRange(hsv_image, green_lower, green_upper)
+
+        return cv2.bitwise_and(image, image, mask=mask)
 
     """
         Returns the path contour and a list of coordinates of points (purple) on the 
@@ -109,10 +129,38 @@ class VisionProcessor:
             return primary_contour, locs
 
         return None, None
+    
+    def calibrate(self):
+        while True:
+            _, image = self.capture.read()  # camera frame BGR
+
+            path_mask = self.get_path_mask(image)
+            path, path_locs = self.get_path_data(path_mask)
+            reference_locs = [
+                (int(self.capture.get(cv2.CAP_PROP_FRAME_WIDTH) // 2), y_loc)
+                for y_loc in self.y_locs
+            ]
+
+            deg_turned = 0
+            if not path:
+                self.motion.turn(30)
+                deg_turned += 30
+                if deg_turned % 360 == 0:
+                    self.motion.move(0.1)
+            else:
+                if path_locs is not None:
+                    dx = path_locs[-1][0] - reference_locs[-1][0]
+                    dy = int(self.capture.get(cv2.CAP_PROP_FRAME_HEIGHT) - reference_locs[-1][0])
+
+                    theta = math.atan(dx/dy)
+
+                    self.motion.turn(theta)
+
+                    return True
 
     def run(self):
         while True:
-            _, image = self.capture.read()  # BGR
+            _, image = self.capture.read()  # camera frame BGR
 
             path_mask = self.get_path_mask(image)
             path, path_locs = self.get_path_data(path_mask)
@@ -124,11 +172,22 @@ class VisionProcessor:
             for loc in reference_locs:
                 cv2.circle(image, loc, 6, (255, 0, 0))
 
+            danger_mask = self.get_danger_mask(image)
+            safe_mask = self.get_safe_mask(image)
+
             if not self.rescue_state.is_rescue_complete:
                 if not self.rescue_state.is_figure_held:
-                    print("detect target")
+                    while True:
+                        if danger_mask is not None:
+                            # turn
+                            self.rescue_state.is_figure_held = True
+                            break
                 else:
-                    print("detect green zones")
+                    while True:
+                        if safe_mask is not None:
+                            # action
+                            self.rescue_state.is_rescue_complete = True
+                            break
 
             if path is not None:
                 cv2.drawContours(image, path, -1, (0, 255, 0), 2)
@@ -137,7 +196,7 @@ class VisionProcessor:
                         cv2.circle(image, path_locs[i], 6, (255, 0, 255))
                     print(path_locs[-1][0] - reference_locs[-1][0])
             else:
-                print("Robot is off track")
+                pass
 
             cv2.imshow("Image", image)
 

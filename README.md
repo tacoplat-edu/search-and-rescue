@@ -13,3 +13,10 @@ and use this to save dependencies after installing them.
 ```
 pip freeze > requirements.txt
 ```
+
+## Running on the Pi
+To most efficiently interface with devices on the Pi, install the RPi.GPIO library to use as the GPIO Zero pin factory.
+
+```
+pip install RPi.GPIO
+```
