@@ -1,6 +1,7 @@
-from models.devices import devices 
+from models.devices import devices
 
-class ServoController():
+
+class ServoController:
     def __init__(self) -> None:
         self.active_flag = False
         self.servo = devices.servo_motor
