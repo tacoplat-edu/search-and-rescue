@@ -26,17 +26,51 @@ class VisionProcessor:
         
         self.y_locs = get_dot_locations(self.capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
+    def get_mask_color(self, image: cv2.typing.MatLike) -> str:
+        if image is None:
+            return None
+    
+        hsv_image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+    
+        red_lower, red_upper = np.uint8([0, 100, 30]), np.uint8([10, 255, 255])
+        blue_lower, blue_upper = np.uint8([100, 100, 30]), np.uint8([140, 255, 255])
+        green_lower, green_upper = np.uint8([40, 100, 30]), np.uint8([80, 255, 255])
+    
+        red_mask = cv2.inRange(hsv_image, red_lower, red_upper)
+        blue_mask = cv2.inRange(hsv_image, blue_lower, blue_upper)
+        green_mask = cv2.inRange(hsv_image, green_lower, green_upper)
+    
+        red_count = cv2.countNonZero(red_mask)
+        blue_count = cv2.countNonZero(blue_mask)
+        green_count = cv2.countNonZero(green_mask)
+    
+        if red_count > blue_count and red_count > green_count:
+            return "red"
+        elif blue_count > red_count and blue_count > green_count:
+            return "blue"  
+        elif green_count > red_count and green_count > blue_count:
+            return "green"  
+        else:
+            return None  
+        
     def get_path_mask(self, image: cv2.typing.MatLike) -> cv2.typing.MatLike:
         if image is None: return None
         hsv_image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
         red1_lower, red1_upper = np.uint8([0, 100, 30]), np.uint8([10, 255, 255])
-        red2_lower, red2_upper = np.uint8([160, 100, 30]), np.uint8([180, 255, 255])
+        red2_lower, red2_upper = np.uint8([160, 100, 30]), np.uint8([180, 255, 255]) 
 
         mask1 = cv2.inRange(hsv_image, red1_lower, red1_upper)
         mask2 = cv2.inRange(hsv_image, red2_lower, red2_upper)
         mask = cv2.bitwise_or(mask1, mask2)
 
         return cv2.bitwise_and(image, image, mask=mask)
+    
+    def get_danger_mask(self, image: cv2.typing.MatLike) -> cv2.typing.MatLike:
+         # TODO: Implememt this method for future checkins
+         pass
+    def get_safe_mask(self, image: cv2.typing.MatLike) -> cv2.typing.MatLike:
+        #TODO: Implement this method for future checkins
+        pass
 
     def get_path_curvature(self, mask: cv2.typing.MatLike):
         if mask is None: return None, None
