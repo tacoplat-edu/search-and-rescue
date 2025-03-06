@@ -246,7 +246,7 @@ class VisionProcessor:
             ):
                 if safe is not None:
                     print('green detected')
-                    self.motion.reverse(0.4)
+                    self.motion.move(-15, 3)
                     self.rescue_state.is_rescue_complete = True
 
             # Always look for red if not for the other two colours
