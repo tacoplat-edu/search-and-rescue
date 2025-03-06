@@ -1,5 +1,6 @@
 import os
 import math
+import time
 
 import cv2
 import numpy as np
@@ -254,6 +255,9 @@ class VisionProcessor:
                     self.motion.stop()
                     self.motion.move(-15, 3)
                     self.rescue_state.is_rescue_complete = True
+
+                    time.sleep(2)
+                    return True
 
             # Always look for red if not for the other two colours
             if path is not None and path_locs is not None:
