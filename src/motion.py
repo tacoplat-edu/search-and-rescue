@@ -4,6 +4,7 @@ import time
 from models.devices import DeviceConfiguration
 from models.wheel import Wheel
 
+MAX_SPEED = 62.8 # [cm/s]
 
 class MotionController:
     devices: DeviceConfiguration
@@ -43,26 +44,32 @@ class MotionController:
     def reverse(self, speed: float):
         self.set_reverse_speed(speed)
 
-    def move(self, distance: float):
+
+    """
+        Speed in cm/s
+    """
+    def move(self, distance: float, speed: float):
         rotations_needed = distance / self.wheel_circumference
-        current_rotations = 0
-        # idk how to do this with gpiozero, maybe a motor encoder issue?
-        while True:
-            self.devices.wheel_motors[Wheel.LEFT].forward()
-            self.devices.wheel_motors[Wheel.RIGHT].forward()
-            if current_rotations >= rotations_needed:
-                break
+        self.devices.wheel_encoders[Wheel.LEFT].steps = 0
+
+        normalized_speed = speed / MAX_SPEED
+        assert normalized_speed > 0 and normalized_speed <= 1
+
+        self.devices.wheel_motors[Wheel.LEFT].forward(normalized_speed)
+        self.devices.wheel_motors[Wheel.RIGHT].forward(normalized_speed)
+
+        while current_rotations < rotations_needed:
+            current_rotations = self.devices.wheel_encoders[Wheel.LEFT].steps
         self.stop()
 
     """
         Speed in deg/s
     """
-
-    def turn(self, rotation_deg: float, speed: float):
+    def turn(self, rotation_deg: float, angular_speed: float):
         lo, ro = self.devices.wheel_motors[Wheel.LEFT].value, self.devices.wheel_motors[Wheel.RIGHT].value
-        normalized_speed = speed * (2*math.pi)/360 * 6 / 62.8
+        normalized_speed = (angular_speed * (2*math.pi)/360 * 6 ) / MAX_SPEED
     
-        execution_time = abs(rotation_deg) / speed
+        execution_time = abs(rotation_deg) / angular_speed
         if rotation_deg > 0:
             self.set_right_turn_speed(normalized_speed)
         else:
