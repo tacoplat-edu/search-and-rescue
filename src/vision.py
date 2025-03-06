@@ -5,13 +5,16 @@ import math
 
 from motion import MotionController
 from models.rescue import RescueState
+from models.wheel import Wheel
 from helpers.vision import get_dot_locations
 
 FEED_WAIT_DELAY_MS = 1
 
 
 class VisionProcessor:
+    running: bool
     capture: cv2.VideoCapture
+    capture_config: dict[int, float]
     motion: MotionController
     rescue_state: RescueState
     y_locs: list[int]
@@ -21,11 +24,13 @@ class VisionProcessor:
         motion: MotionController,
         config_params: dict[int, float],
     ) -> None:
+        self.running = False
         self.capture = cv2.VideoCapture(0)
         self.motion = motion
+        self.capture_config = config_params
         self.rescue_state = RescueState()
 
-        for k, v in config_params.items():
+        for k, v in self.capture_config.items():
             self.capture.set(k, v)
 
         self.y_locs = get_dot_locations(self.capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
@@ -93,10 +98,24 @@ class VisionProcessor:
             return None
         hsv_image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
 
-        green_lower, green_upper = np.uint8([40, 100, 30]), np.uint8([80, 255, 255])
+        green_lower, green_upper = np.uint8([40, 40, 20]), np.uint8([95, 255, 255])
         mask = cv2.inRange(hsv_image, green_lower, green_upper)
 
         return cv2.bitwise_and(image, image, mask=mask)
+    
+    def detect_special_contours(self, mask: cv2.typing.MatLike, threshold: int = 50):
+        if mask is None:
+            return None
+        
+        grayscale = cv2.cvtColor(mask, cv2.COLOR_BGR2GRAY)
+        contours, _ = cv2.findContours(grayscale, cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE)
+        
+        if contours:
+            primary = max(contours, key=cv2.contourArea)
+            if cv2.contourArea(primary) > threshold:
+                return primary
+        
+        return None
 
     """
         Returns the path contour and a list of coordinates of points (purple) on the 
@@ -162,8 +181,15 @@ class VisionProcessor:
                     return True
 
     def run(self):
-        self.motion.start(1)
-        while True:
+        if not self.running:
+            self.running = True
+            self.capture.open(0)
+            for k, v in self.capture_config.items():
+                self.capture.set(k, v)
+
+        self.motion.start(0.25)
+
+        while self.running:
             _, image = self.capture.read()  # camera frame BGR
 
             path_mask = self.get_path_mask(image)
@@ -179,39 +205,55 @@ class VisionProcessor:
             danger_mask = self.get_danger_mask(image)
             safe_mask = self.get_safe_mask(image)
 
+            danger = self.detect_special_contours(danger_mask, 153600)
+            safe = self.detect_special_contours(safe_mask)
+
+            # red
+            if path is not None:
+                cv2.drawContours(image, path, -1, (0, 0, 255), 2)
+            if danger is not None:
+                cv2.drawContours(image, danger, -1, (255, 0, 0), 2)
+            if safe is not None:
+                cv2.drawContours(image, safe, -1, (0, 255, 0), 2)
+
+            cv2.imshow("Image", image)
+
+            print(
+                "motor state", 
+                self.motion.devices.wheel_motors[Wheel.LEFT].value,
+                self.motion.devices.wheel_motors[Wheel.RIGHT].value
+            )
+
             # blue
             if (
                 not self.rescue_state.is_rescue_complete
                 and not self.rescue_state.is_figure_held
             ):
-                if danger_mask is not None:
+                if danger is not None:
+                    print('blue detected')
                     res = self.motion.turn(180, 60)
                     self.rescue_state.is_figure_held = res
-                    break
             # green
             elif (
                 not self.rescue_state.is_rescue_complete
                 and self.rescue_state.is_figure_held
             ):
-                if safe_mask is not None:
-                    self.motion.reverse(1)
+                if safe is not None:
+                    print('green detected')
+                    self.motion.reverse(0.4)
                     self.rescue_state.is_rescue_complete = True
-                    break
 
             if path is not None:
-                cv2.drawContours(image, path, -1, (0, 255, 0), 2)
                 if path_locs is not None:
                     for i in range(len(path_locs)):
                         cv2.circle(image, path_locs[i], 6, (255, 0, 255))
-                    
                     print(path_locs[-1][0] - reference_locs[-1][0])
             else:
                 pass
 
-            cv2.imshow("Image", image)
-
             if cv2.waitKey(FEED_WAIT_DELAY_MS) & 0xFF == ord("q"):
                 break
 
-        self.capture.release()
+        if self.capture is not None and self.capture.isOpened():
+            self.capture.release()
         cv2.destroyAllWindows()
