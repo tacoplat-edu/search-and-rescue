@@ -1,9 +1,12 @@
 import math
 import time
+import os
 
 from models.devices import DeviceConfiguration
 from models.wheel import Wheel
 
+
+DEBUG = os.environ.get("DEBUG") == "true"
 MAX_SPEED = 62.8 # [cm/s]
 
 class MotionController:
@@ -57,7 +60,7 @@ class MotionController:
         Distance in cm, Speed in cm/s
     """
     def move(self, distance: float, speed: float):
-        rotations_needed = distance / self.wheel_circumference
+        rotations_needed = math.ceil(abs(distance) / self.wheel_circumference)
         current_rotations = self.devices.wheel_encoders[Wheel.LEFT].steps = 0
 
         normalized_speed = abs(speed) / MAX_SPEED
@@ -69,6 +72,9 @@ class MotionController:
             self.set_reverse_speed(normalized_speed)
 
         while current_rotations < rotations_needed:
+            if DEBUG:
+                time.sleep(abs(distance/speed) / rotations_needed)
+                self.devices.wheel_encoders[Wheel.LEFT].steps += 1
             current_rotations = self.devices.wheel_encoders[Wheel.LEFT].steps
             
         self.stop()
