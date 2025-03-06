@@ -187,7 +187,7 @@ class VisionProcessor:
             for k, v in self.capture_config.items():
                 self.capture.set(k, v)
 
-        self.motion.start(0.25)
+        self.motion.start(self.motion.default_speed_ratio)
 
         while self.running:
             _, image = self.capture.read()  # camera frame BGR
@@ -230,8 +230,10 @@ class VisionProcessor:
                 and not self.rescue_state.is_figure_held
             ):
                 if danger is not None:
-                    print('blue detected')
+                    print("blue detected")
                     res = self.motion.turn(180, 60)
+                    if res:
+                        self.motion.start(self.motion.default_speed_ratio)
                     self.rescue_state.is_figure_held = res
             # green
             elif (

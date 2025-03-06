@@ -8,10 +8,13 @@ MAX_SPEED = 62.8 # [cm/s]
 
 class MotionController:
     devices: DeviceConfiguration
+    wheel_circumference: float
+    default_speed_ratio: float
 
     def __init__(self, devices) -> None:
         self.devices = devices
         self.wheel_circumference = 2 * math.pi * 2  # 20 mm radius
+        self.default_speed_ratio = 0.45
 
     def set_motor_speed(self, speed: float, wheel: Wheel = Wheel.BOTH):
         if wheel == Wheel.BOTH:
@@ -61,12 +64,12 @@ class MotionController:
         while current_rotations < rotations_needed:
             current_rotations = self.devices.wheel_encoders[Wheel.LEFT].steps
         self.stop()
+        return True
 
     """
         Speed in deg/s
     """
     def turn(self, rotation_deg: float, angular_speed: float):
-        lo, ro = self.devices.wheel_motors[Wheel.LEFT].value, self.devices.wheel_motors[Wheel.RIGHT].value
         normalized_speed = (angular_speed * (2*math.pi)/360 * 6 ) / MAX_SPEED
     
         execution_time = abs(rotation_deg) / angular_speed
@@ -76,7 +79,5 @@ class MotionController:
             self.set_left_turn_speed(normalized_speed)
         time.sleep(execution_time)
 
-        self.set_motor_speed(lo, Wheel.LEFT)
-        self.set_motor_speed(ro, Wheel.RIGHT)
-
+        self.stop()
         return True
