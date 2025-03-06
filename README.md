@@ -14,6 +14,11 @@ and use this to save dependencies after installing them.
 pip freeze > requirements.txt
 ```
 
+This project also has a Makefile which simplifies some commands (if you have make available).
+- `make` or `make run` to run the program
+- `make install` to install dependencies from requirements.txt
+- `make save-deps` to update requirements.txt with current deps.
+
 In `.env`, the DEBUG flag toggles the development mode. `true` corresponds to Desktop mode, `false` corresponds to Pi mode.
 
 ## Running on the Pi
