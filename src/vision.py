@@ -1,7 +1,8 @@
+import os
+import math
+
 import cv2
 import numpy as np
-
-import math
 
 from motion import MotionController
 from models.rescue import RescueState
@@ -9,7 +10,7 @@ from models.wheel import Wheel
 from helpers.vision import get_dot_locations
 
 FEED_WAIT_DELAY_MS = 1
-
+SHOW_IMAGES = os.environ.get("SHOW_IMAGE_WINDOW") == "true"
 
 class VisionProcessor:
     running: bool
@@ -218,7 +219,8 @@ class VisionProcessor:
             if safe is not None:
                 cv2.drawContours(image, safe, -1, (0, 255, 0), 2)
 
-            cv2.imshow("Image", image)
+            if SHOW_IMAGES:
+                cv2.imshow("Image", image)
 
             print(
                 "motor state", 
