@@ -129,7 +129,7 @@ class VisionProcessor:
             return primary_contour, locs
 
         return None, None
-    
+
     def calibrate(self):
         while True:
             _, image = self.capture.read()  # camera frame BGR
@@ -150,15 +150,19 @@ class VisionProcessor:
             else:
                 if path_locs is not None:
                     dx = path_locs[-1][0] - reference_locs[-1][0]
-                    dy = int(self.capture.get(cv2.CAP_PROP_FRAME_HEIGHT) - reference_locs[-1][0])
+                    dy = int(
+                        self.capture.get(cv2.CAP_PROP_FRAME_HEIGHT)
+                        - reference_locs[-1][0]
+                    )
 
-                    theta = math.atan(dx/dy)
+                    theta = math.atan(dx / dy)
 
                     self.motion.turn(theta)
 
                     return True
 
     def run(self):
+        self.motion.start(1)
         while True:
             _, image = self.capture.read()  # camera frame BGR
 
@@ -175,25 +179,31 @@ class VisionProcessor:
             danger_mask = self.get_danger_mask(image)
             safe_mask = self.get_safe_mask(image)
 
-            if not self.rescue_state.is_rescue_complete:
-                if not self.rescue_state.is_figure_held:
-                    while True:
-                        if danger_mask is not None:
-                            # turn
-                            self.rescue_state.is_figure_held = True
-                            break
-                else:
-                    while True:
-                        if safe_mask is not None:
-                            # action
-                            self.rescue_state.is_rescue_complete = True
-                            break
+            # blue
+            if (
+                not self.rescue_state.is_rescue_complete
+                and not self.rescue_state.is_figure_held
+            ):
+                if danger_mask is not None:
+                    res = self.motion.turn(180, 60)
+                    self.rescue_state.is_figure_held = res
+                    break
+            # green
+            elif (
+                not self.rescue_state.is_rescue_complete
+                and self.rescue_state.is_figure_held
+            ):
+                if safe_mask is not None:
+                    self.motion.reverse(1)
+                    self.rescue_state.is_rescue_complete = True
+                    break
 
             if path is not None:
                 cv2.drawContours(image, path, -1, (0, 255, 0), 2)
                 if path_locs is not None:
                     for i in range(len(path_locs)):
                         cv2.circle(image, path_locs[i], 6, (255, 0, 255))
+                    
                     print(path_locs[-1][0] - reference_locs[-1][0])
             else:
                 pass

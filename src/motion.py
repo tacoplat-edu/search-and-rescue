@@ -1,4 +1,5 @@
 import math
+import time
 
 from models.devices import devices
 from models.wheel import Wheel
@@ -47,8 +48,18 @@ class MotionController:
                 break
         self.stop()
 
+    """
+        Speed in deg/s
+    """
+
     def turn(self, rotation_deg: float, speed: float):
-        if rotation_deg > 0:
-            self.set_right_turn_speed(speed)
-        else:
-            self.set_left_turn_speed(speed)
+        try:
+            execution_time = abs(rotation_deg) / speed
+            if rotation_deg > 0:
+                self.set_right_turn_speed(speed)
+            else:
+                self.set_left_turn_speed(speed)
+            time.sleep(execution_time)
+            return True
+        except:
+            return False
