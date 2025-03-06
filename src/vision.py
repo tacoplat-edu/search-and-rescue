@@ -257,7 +257,7 @@ class VisionProcessor:
                     self.rescue_state.is_rescue_complete = True
 
                     time.sleep(2)
-                    return True
+                    break
 
             # Always look for red if not for the other two colours
             if path is not None and path_locs is not None:
