@@ -1,4 +1,5 @@
 # stdlib imports
+import os
 from dataclasses import dataclass
 
 # external imports
@@ -8,9 +9,8 @@ from gpiozero.pins.mock import MockFactory, MockPWMPin
 # local imports
 from models.wheel import Wheel
 
-DEBUG = True
-
-Device.pin_factory = MockFactory(pin_class=MockPWMPin)
+if os.environ.get("DEBUG") == "true":
+    Device.pin_factory = MockFactory(pin_class=MockPWMPin)
 
 @dataclass
 class DeviceConfiguration:

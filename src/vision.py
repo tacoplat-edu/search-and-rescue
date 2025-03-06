@@ -181,6 +181,7 @@ class VisionProcessor:
                     return True
 
     def run(self):
+        # Restart the stream if not already opened
         if not self.running:
             self.running = True
             self.capture.open(0)
@@ -190,11 +191,12 @@ class VisionProcessor:
         self.motion.start(self.motion.default_speed_ratio)
 
         while self.running:
-            _, image = self.capture.read()  # camera frame BGR
+            _, image = self.capture.read()  # camera frame, BGR
 
             path_mask = self.get_path_mask(image)
-            path, path_locs = self.get_path_data(path_mask)
+            path, path_locs = self.get_path_data(path_mask) # Purple dots along path centreline
 
+            # Blue dots along centre y-axis
             reference_locs = [
                 (int(self.capture.get(cv2.CAP_PROP_FRAME_WIDTH) // 2), y_loc)
                 for y_loc in self.y_locs
@@ -208,7 +210,7 @@ class VisionProcessor:
             danger = self.detect_special_contours(danger_mask, 153600)
             safe = self.detect_special_contours(safe_mask)
 
-            # red
+            # Draw contours onto the frame
             if path is not None:
                 cv2.drawContours(image, path, -1, (0, 0, 255), 2)
             if danger is not None:
@@ -224,7 +226,7 @@ class VisionProcessor:
                 self.motion.devices.wheel_motors[Wheel.RIGHT].value
             )
 
-            # blue
+            # Look for blue only
             if (
                 not self.rescue_state.is_rescue_complete
                 and not self.rescue_state.is_figure_held
@@ -235,7 +237,7 @@ class VisionProcessor:
                     if res:
                         self.motion.start(self.motion.default_speed_ratio)
                     self.rescue_state.is_figure_held = res
-            # green
+            # Look for green only
             elif (
                 not self.rescue_state.is_rescue_complete
                 and self.rescue_state.is_figure_held
@@ -245,12 +247,14 @@ class VisionProcessor:
                     self.motion.reverse(0.4)
                     self.rescue_state.is_rescue_complete = True
 
+            # Always look for red if not for the other two colours
             if path is not None:
                 if path_locs is not None:
                     for i in range(len(path_locs)):
                         cv2.circle(image, path_locs[i], 6, (255, 0, 255))
                     print(path_locs[-1][0] - reference_locs[-1][0])
             else:
+                # Need to run recalibration algorithm
                 pass
 
             if cv2.waitKey(FEED_WAIT_DELAY_MS) & 0xFF == ord("q"):

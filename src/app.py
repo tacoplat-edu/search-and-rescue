@@ -1,9 +1,10 @@
 import os
 import keyboard
-import time
 
 os.environ["OPENCV_VIDEOIO_MSMF_ENABLE_HW_TRANSFORMS"] = "0"
 import cv2
+from dotenv import load_dotenv
+load_dotenv()
 
 from vision import VisionProcessor
 from servo import ServoController
@@ -27,16 +28,20 @@ def press_handler():
     vp.running = False
 button.when_pressed = press_handler
 
-try:
-    while True:
-        state = button.pin.state
-        if keyboard.read_key() == "f":
-            if state:
-                button.pin.drive_low()
-            else:
-                button.pin.drive_high()
-except KeyboardInterrupt:
-    print("Stopped")
-finally:
-    devices.servo_motor.close()
-    devices.action_button.close()
+if os.environ.get("DEBUG") == "true":
+    try:
+        while True:
+            state = button.pin.state
+            if keyboard.read_key() == "f":
+                if state:
+                    button.pin.drive_low()
+                else:
+                    button.pin.drive_high()
+    except KeyboardInterrupt:
+        print("Stopped")
+    finally:
+        devices.servo_motor.close()
+        devices.action_button.close()
+else:
+    from signal import pause
+    pause()
