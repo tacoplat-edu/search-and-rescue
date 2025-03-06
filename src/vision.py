@@ -188,6 +188,7 @@ class VisionProcessor:
             self.capture.open(0)
             for k, v in self.capture_config.items():
                 self.capture.set(k, v)
+            self.rescue_state = RescueState()
 
         self.motion.start(self.motion.default_speed_ratio)
 
@@ -209,11 +210,14 @@ class VisionProcessor:
             safe_mask = self.get_safe_mask(image)
 
             danger = self.detect_special_contours(danger_mask, 153600)
-            safe = self.detect_special_contours(safe_mask)
+            safe = self.detect_special_contours(safe_mask, 153600)
 
             # Draw contours onto the frame
             if path is not None:
                 cv2.drawContours(image, path, -1, (0, 0, 255), 2)
+                if path_locs is not None:
+                    for i in range(len(path_locs)):
+                        cv2.circle(image, path_locs[i], 6, (255, 0, 255))
             if danger is not None:
                 cv2.drawContours(image, danger, -1, (255, 0, 0), 2)
             if safe is not None:
@@ -235,6 +239,7 @@ class VisionProcessor:
             ):
                 if danger is not None:
                     print("blue detected")
+                    self.motion.stop()
                     res = self.motion.turn(180, 60)
                     if res:
                         self.motion.start(self.motion.default_speed_ratio)
@@ -246,15 +251,13 @@ class VisionProcessor:
             ):
                 if safe is not None:
                     print('green detected')
+                    self.motion.stop()
                     self.motion.move(-15, 3)
                     self.rescue_state.is_rescue_complete = True
 
             # Always look for red if not for the other two colours
-            if path is not None:
-                if path_locs is not None:
-                    for i in range(len(path_locs)):
-                        cv2.circle(image, path_locs[i], 6, (255, 0, 255))
-                    print(path_locs[-1][0] - reference_locs[-1][0])
+            if path is not None and path_locs is not None:
+                print(path_locs[-1][0] - reference_locs[-1][0])
             else:
                 # Need to run recalibration algorithm
                 pass

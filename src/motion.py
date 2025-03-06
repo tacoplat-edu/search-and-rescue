@@ -20,6 +20,8 @@ class MotionController:
         self.default_speed_ratio = 0.45
 
     def set_forward_speed(self, speed: float, wheel: Wheel = Wheel.BOTH):
+        assert speed >= 0 and speed <= 1
+
         if wheel == Wheel.BOTH:
             self.set_forward_speed(speed, Wheel.LEFT)
             self.set_forward_speed(speed, Wheel.RIGHT)
@@ -29,6 +31,8 @@ class MotionController:
             self.devices.wheel_motors[Wheel.RIGHT].forward(speed)
 
     def set_reverse_speed(self, speed: float, wheel: Wheel = Wheel.BOTH):
+        assert speed >= 0 and speed <= 1
+
         if wheel == Wheel.BOTH:
             self.set_reverse_speed(speed, Wheel.LEFT)
             self.set_reverse_speed(speed, Wheel.RIGHT)
@@ -38,14 +42,17 @@ class MotionController:
             self.devices.wheel_motors[Wheel.RIGHT].backward(speed)
 
     def set_right_turn_speed(self, speed: float):
+        assert speed >= 0 and speed <= 1
         self.devices.wheel_motors[Wheel.LEFT].forward(speed)
         self.devices.wheel_motors[Wheel.RIGHT].backward(speed)
 
     def set_left_turn_speed(self, speed: float):
+        assert speed >= 0 and speed <= 11
         self.devices.wheel_motors[Wheel.LEFT].backward(speed)
         self.devices.wheel_motors[Wheel.RIGHT].forward(speed)
 
     def start(self, speed: float):
+        assert speed >= 0 and speed <= 1
         self.set_forward_speed(speed)
 
     def stop(self):
@@ -71,6 +78,8 @@ class MotionController:
         else:
             self.set_reverse_speed(normalized_speed)
 
+        print("lwv move", self.devices.wheel_motors[Wheel.LEFT].value)
+
         while current_rotations < rotations_needed:
             if DEBUG:
                 time.sleep(abs(distance/speed) / rotations_needed)
@@ -91,6 +100,9 @@ class MotionController:
             self.set_right_turn_speed(normalized_speed)
         else:
             self.set_left_turn_speed(normalized_speed)
+
+        print("lwv turn", self.devices.wheel_motors[Wheel.LEFT].value)
+
         time.sleep(execution_time)
 
         self.stop()
