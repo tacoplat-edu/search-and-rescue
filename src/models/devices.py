@@ -27,8 +27,8 @@ devices = (
             Wheel.RIGHT: Motor(27,17,enable=12),
         },
         wheel_encoders={
-            Wheel.LEFT: RotaryEncoder(26,25, max_steps=1440),
-            Wheel.RIGHT: RotaryEncoder(23,24, max_steps=1440),
+            Wheel.LEFT: RotaryEncoder(26,25, max_steps=9000),
+            Wheel.RIGHT: RotaryEncoder(23,24, max_steps=9000),
         },
         servo_motor=AngularServo(9, min_angle=-90, max_angle=90),
         action_button=Button(10),
