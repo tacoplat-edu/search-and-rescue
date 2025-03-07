@@ -241,6 +241,7 @@ class VisionProcessor:
                 if danger is not None:
                     print("blue detected")
                     self.motion.stop()
+                    time.sleep(2.5)
                     res = self.motion.turn(180, 60)
                     if res:
                         self.motion.start(self.motion.default_speed_ratio)
@@ -253,6 +254,7 @@ class VisionProcessor:
                 if safe is not None:
                     print('green detected')
                     self.motion.stop()
+                    time.sleep(2.5)
                     self.motion.move(-45, 6)
                     self.rescue_state.is_rescue_complete = True
 
