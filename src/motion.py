@@ -67,6 +67,8 @@ class MotionController:
         Distance in cm, Speed in cm/s
     """
     def move(self, distance: float, speed: float):
+        self.devices.wheel_encoders[Wheel.LEFT].steps = 0
+
         rotations_needed = math.ceil(abs(distance) / self.wheel_circumference)
         print("rn", rotations_needed)
         pulses_needed = int(rotations_needed * 420)
@@ -87,7 +89,7 @@ class MotionController:
 
         print("lwv move", self.devices.wheel_motors[Wheel.LEFT].value)
 
-        while self.devices.wheel_encoders[Wheel.LEFT].steps < target_steps:
+        while abs(self.devices.wheel_encoders[Wheel.LEFT].steps) < target_steps:
             print("l",self.devices.wheel_encoders[Wheel.LEFT].steps)
             print("r",self.devices.wheel_encoders[Wheel.RIGHT].steps)
             if DEBUG:

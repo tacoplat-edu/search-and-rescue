@@ -253,7 +253,7 @@ class VisionProcessor:
                 if safe is not None:
                     print('green detected')
                     self.motion.stop()
-                    self.motion.move(-30, 6)
+                    self.motion.move(-45, 6)
                     self.rescue_state.is_rescue_complete = True
 
                     time.sleep(2)
