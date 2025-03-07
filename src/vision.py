@@ -37,7 +37,7 @@ class VisionProcessor:
 
         self.y_locs = get_dot_locations(self.capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
-    def get_path_mask(self, image: cv2.typing.MatLike) -> cv2.typing.MatLike:
+    def get_path_mask(self, image):
         if image is None:
             return None
         hsv_image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
@@ -50,7 +50,7 @@ class VisionProcessor:
 
         return cv2.bitwise_and(image, image, mask=mask)
 
-    """ def get_mask_color(self, image: cv2.typing.MatLike) -> str:
+    """ def get_mask_color(self, image) -> str:
         if image is None:
             return None
 
@@ -81,7 +81,7 @@ class VisionProcessor:
         Detect blue, to trigger pickup.
     """
 
-    def get_danger_mask(self, image: cv2.typing.MatLike) -> cv2.typing.MatLike:
+    def get_danger_mask(self, image):
         if image is None:
             return None
         hsv_image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
@@ -95,7 +95,7 @@ class VisionProcessor:
         Detect green, to trigger drop-off.
     """
 
-    def get_safe_mask(self, image: cv2.typing.MatLike) -> cv2.typing.MatLike:
+    def get_safe_mask(self, image):
         if image is None:
             return None
         hsv_image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
@@ -105,7 +105,7 @@ class VisionProcessor:
 
         return cv2.bitwise_and(image, image, mask=mask)
     
-    def detect_special_contours(self, mask: cv2.typing.MatLike, threshold: int = 50):
+    def detect_special_contours(self, mask, threshold: int = 50):
         if mask is None:
             return None
         
@@ -125,8 +125,8 @@ class VisionProcessor:
     """
 
     def get_path_data(
-        self, mask: cv2.typing.MatLike
-    ) -> tuple[cv2.typing.MatLike, list[tuple[int, int]]]:
+        self, mask
+    ):
         if mask is None:
             return None, None
 

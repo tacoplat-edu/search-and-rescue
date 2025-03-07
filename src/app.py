@@ -1,5 +1,6 @@
 import os
-import keyboard
+#import keyboard
+from signal import pause
 
 os.environ["OPENCV_VIDEOIO_MSMF_ENABLE_HW_TRANSFORMS"] = "0"
 import cv2
@@ -17,18 +18,20 @@ motion = MotionController(devices)
 vp = VisionProcessor(
     motion,
     {
-        cv2.CAP_PROP_FRAME_WIDTH: 1280,
-        cv2.CAP_PROP_FRAME_HEIGHT: 720,
+        cv2.CAP_PROP_FRAME_WIDTH: 640,
+        cv2.CAP_PROP_FRAME_HEIGHT: 480,
     },
 )
 
-button = devices.action_button
-def press_handler():
-    vp.run()
-    vp.running = False
-button.when_pressed = press_handler
+#button = devices.action_button
+#def press_handler():
+#    vp.run()
+#    vp.running = False
+#button.when_pressed = press_handler
 
-if os.environ.get("DEBUG") == "true":
+vp.run()
+
+"""if os.environ.get("DEBUG") == "true":
     try:
         while True:
             state = button.pin.state
@@ -42,6 +45,5 @@ if os.environ.get("DEBUG") == "true":
     finally:
         devices.servo_motor.close()
         devices.action_button.close()
-else:
-    from signal import pause
-    pause()
+else:"""
+#pause()
