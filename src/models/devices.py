@@ -23,12 +23,12 @@ class DeviceConfiguration:
 devices = (
     DeviceConfiguration(
         wheel_motors={
-            Wheel.LEFT: Motor(17,27,enable=12),
-            Wheel.RIGHT: Motor(5,6,enable=19),
+            Wheel.LEFT: Motor(5,6,enable=19),
+            Wheel.RIGHT: Motor(27,17,enable=12),
         },
         wheel_encoders={
-            Wheel.LEFT: RotaryEncoder(23,24),
-            Wheel.RIGHT: RotaryEncoder(25,26),
+            Wheel.LEFT: RotaryEncoder(26,25, max_steps=1440),
+            Wheel.RIGHT: RotaryEncoder(23,24, max_steps=1440),
         },
         servo_motor=AngularServo(9, min_angle=-90, max_angle=90),
         action_button=Button(10),

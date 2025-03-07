@@ -16,8 +16,8 @@ class MotionController:
 
     def __init__(self, devices) -> None:
         self.devices = devices
-        self.wheel_circumference = 2 * math.pi * 2  # 20 mm radius -> 4pi cm circumference
-        self.default_speed_ratio = 0.45
+        self.wheel_circumference = 2 * math.pi * 3.5  # 35 mm radius -> 4pi cm circumference
+        self.default_speed_ratio = 0.15
 
     def set_forward_speed(self, speed: float, wheel: Wheel = Wheel.BOTH):
         assert speed >= 0 and speed <= 1
@@ -68,9 +68,16 @@ class MotionController:
     """
     def move(self, distance: float, speed: float):
         rotations_needed = math.ceil(abs(distance) / self.wheel_circumference)
-        current_rotations = self.devices.wheel_encoders[Wheel.LEFT].steps = 0
+        print("rn", rotations_needed)
+        pulses_needed = int(rotations_needed * 420)
+        print("pn", pulses_needed)
+
+        current_steps = self.devices.wheel_encoders[Wheel.LEFT].steps
+        target_steps = current_steps + pulses_needed
+        print("ts", target_steps)
 
         normalized_speed = abs(speed) / MAX_SPEED
+        print("ns", normalized_speed)
         assert normalized_speed > 0 and normalized_speed <= 1
 
         if distance >= 0:
@@ -80,11 +87,13 @@ class MotionController:
 
         print("lwv move", self.devices.wheel_motors[Wheel.LEFT].value)
 
-        while current_rotations < rotations_needed:
+        while self.devices.wheel_encoders[Wheel.LEFT].steps < target_steps:
+            print("l",self.devices.wheel_encoders[Wheel.LEFT].steps)
+            print("r",self.devices.wheel_encoders[Wheel.RIGHT].steps)
             if DEBUG:
                 time.sleep(abs(distance/speed) / rotations_needed)
                 self.devices.wheel_encoders[Wheel.LEFT].steps += 1
-            current_rotations = self.devices.wheel_encoders[Wheel.LEFT].steps
+            time.sleep(0.1)
             
         self.stop()
         return True
