@@ -7,114 +7,176 @@ from models.wheel import Wheel
 
 
 DEBUG = os.environ.get("DEBUG") == "true"
-MAX_SPEED = 62.8 # [cm/s]
+
+MAX_SPEED = 109.96 # [cm/s]
+PULSES_PER_REVOLUTION = 420
+GEAR_RATIO = 30
+
+LOOP_DELAY_S = 0.01
 
 class MotionController:
     devices: DeviceConfiguration
-    wheel_circumference: float
-    default_speed_ratio: float
+    wheel_circumference: float # cm
+    wheel_diameter: float # cm
+    wheel_distance: float # cm
+    default_speed: float # power ratio
 
     def __init__(self, devices) -> None:
         self.devices = devices
-        self.wheel_circumference = 2 * math.pi * 3.5  # 35 mm radius -> 4pi cm circumference
-        self.default_speed_ratio = 0.15
+        self.wheel_diameter = 7
+        self.wheel_distance = 18.25
+        self.wheel_circumference = 2 * math.pi * self.wheel_diameter/2  
+        self.default_speed = 0.3
+
+    def reset_encoders(self):
+        self.devices.wheel_encoders[Wheel.LEFT].steps = 0
+        self.devices.wheel_encoders[Wheel.RIGHT].steps = 0
 
     def set_forward_speed(self, speed: float, wheel: Wheel = Wheel.BOTH):
-        assert speed >= 0 and speed <= 1
+        try:
+            assert 0 <= speed <= 1
 
-        if wheel == Wheel.BOTH:
-            self.set_forward_speed(speed, Wheel.LEFT)
-            self.set_forward_speed(speed, Wheel.RIGHT)
-        elif wheel == Wheel.LEFT:
-            self.devices.wheel_motors[Wheel.LEFT].forward(speed)
-        else:
-            self.devices.wheel_motors[Wheel.RIGHT].forward(speed)
+            if wheel == Wheel.BOTH:
+                self.set_forward_speed(speed, Wheel.LEFT)
+                self.set_forward_speed(speed, Wheel.RIGHT)
+            elif wheel == Wheel.LEFT:
+                self.devices.wheel_motors[Wheel.LEFT].forward(speed)
+            else:
+                self.devices.wheel_motors[Wheel.RIGHT].forward(speed)
+        except AssertionError:
+            print("Forward speed is not in range 0 to 1")
 
     def set_reverse_speed(self, speed: float, wheel: Wheel = Wheel.BOTH):
-        assert speed >= 0 and speed <= 1
+        try:
+            assert 0 <= speed <= 1
 
-        if wheel == Wheel.BOTH:
-            self.set_reverse_speed(speed, Wheel.LEFT)
-            self.set_reverse_speed(speed, Wheel.RIGHT)
-        elif wheel == Wheel.LEFT:
-            self.devices.wheel_motors[Wheel.LEFT].backward(speed)
-        else:
-            self.devices.wheel_motors[Wheel.RIGHT].backward(speed)
+            if wheel == Wheel.BOTH:
+                self.set_reverse_speed(speed, Wheel.LEFT)
+                self.set_reverse_speed(speed, Wheel.RIGHT)
+            elif wheel == Wheel.LEFT:
+                self.devices.wheel_motors[Wheel.LEFT].backward(speed)
+            else:
+                self.devices.wheel_motors[Wheel.RIGHT].backward(speed)
+        except AssertionError:
+            print("Reverse speed is not in range 0 to 1")
 
     def set_right_turn_speed(self, speed: float):
-        assert speed >= 0 and speed <= 1
-        self.devices.wheel_motors[Wheel.LEFT].forward(speed)
-        self.devices.wheel_motors[Wheel.RIGHT].backward(speed)
+        try:
+            assert 0 <= speed <= 1
+            self.devices.wheel_motors[Wheel.LEFT].forward(speed)
+            self.devices.wheel_motors[Wheel.RIGHT].backward(speed)
+        except AssertionError:
+            print("Right turn motor speed is not in range 0 to 1")
 
     def set_left_turn_speed(self, speed: float):
-        assert speed >= 0 and speed <= 11
-        self.devices.wheel_motors[Wheel.LEFT].backward(speed)
-        self.devices.wheel_motors[Wheel.RIGHT].forward(speed)
+        try:
+            assert 0 <= speed <= 1
+            self.devices.wheel_motors[Wheel.LEFT].backward(speed)
+            self.devices.wheel_motors[Wheel.RIGHT].forward(speed)
+        except AssertionError:
+            print("Left turn motor speed is not in range 0 to 1")
 
     def start(self, speed: float):
-        assert speed >= 0 and speed <= 1
-        self.set_forward_speed(speed)
+        try:
+            assert 0 <= speed <= 1
+            self.set_forward_speed(speed)
+        except AssertionError:
+            print("Initial speed not in range 0 to 1")
 
     def stop(self):
         self.devices.wheel_motors[Wheel.LEFT].stop()
         self.devices.wheel_motors[Wheel.RIGHT].stop()
 
     def reverse(self, speed: float):
-        self.set_reverse_speed(speed)
+        self.set_rever
 
+    def wait_for_action(self, target_steps, ease_func):
+        try:
+            while True:
+                current_steps = max(
+                    abs(self.devices.wheel_encoders[Wheel.LEFT].steps),
+                    abs(self.devices.wheel_encoders[Wheel.RIGHT].steps)
+                )
 
-    """
-        Distance in cm, Speed in cm/s
-    """
+                if current_steps >= target_steps:
+                    break
+
+                if current_steps > target_steps * 0.8:
+                    remaining_factor = (target_steps - current_steps) / (target_steps * 0.2)
+                    ease_func(remaining_factor)
+
+                time.sleep(LOOP_DELAY_S)
+        except KeyboardInterrupt:
+            self.stop()
+            return False
+        self.stop()
+        return True
+
     def move(self, distance: float, speed: float):
-        self.devices.wheel_encoders[Wheel.LEFT].steps = 0
-
-        rotations_needed = math.ceil(abs(distance) / self.wheel_circumference)
-        print("rn", rotations_needed)
-        pulses_needed = int(rotations_needed * 420)
-        print("pn", pulses_needed)
-
-        current_steps = self.devices.wheel_encoders[Wheel.LEFT].steps
-        target_steps = current_steps + pulses_needed
-        print("ts", target_steps)
+        """
+        Parameters
+        ----------
+        distance : float
+            The target distance in cm
+        speed : float
+            The desired speed in cm/s
+        """
+        self.reset_encoders()
 
         normalized_speed = abs(speed) / MAX_SPEED
-        print("ns", normalized_speed)
-        assert normalized_speed > 0 and normalized_speed <= 1
 
-        if distance >= 0:
+        rotations_needed = math.ceil(abs(distance) / self.wheel_circumference)
+        target_steps = int(rotations_needed * PULSES_PER_REVOLUTION * GEAR_RATIO)
+
+        if distance > 0:
             self.set_forward_speed(normalized_speed)
         else:
             self.set_reverse_speed(normalized_speed)
 
-        print("lwv move", self.devices.wheel_motors[Wheel.LEFT].value)
-
-        while abs(self.devices.wheel_encoders[Wheel.LEFT].steps) < target_steps:
-            print("l",self.devices.wheel_encoders[Wheel.LEFT].steps)
-            print("r",self.devices.wheel_encoders[Wheel.RIGHT].steps)
-            if DEBUG:
-                time.sleep(abs(distance/speed) / rotations_needed)
-                self.devices.wheel_encoders[Wheel.LEFT].steps += 1
-            time.sleep(0.1)
+        def ease(remaining_factor):
+            # Proportional deceleration; slow down for last 20% of turn
+            reduced_speed = normalized_speed * max(0.3, remaining_factor)
             
-        self.stop()
-        return True
+            if distance > 0:
+                self.set_forward_speed(reduced_speed)
+            else:
+                self.set_reverse_speed(reduced_speed)
 
-    """
-        Speed in deg/s
-    """
-    def turn(self, rotation_deg: float, angular_speed: float):
-        normalized_speed = (angular_speed * (2*math.pi)/360 * 6) / MAX_SPEED
-    
-        execution_time = abs(rotation_deg) / angular_speed
-        if rotation_deg > 0:
+        res = self.wait_for_action(target_steps, ease)
+        return res
+
+    def turn(self, angle: float, angular_speed: float):
+        """
+        Parameters
+        ----------
+        angle : float
+            The target rotation angle in deg
+        angular_speed : float
+            The desired rotation speed in deg/s
+        """
+        self.reset_encoders()
+
+        normalized_speed = (angular_speed * (2*math.pi)/360.0 * self.wheel_distance) / MAX_SPEED
+
+        turning_circumference = math.pi * self.wheel_distance
+        travel_distance = (angle / 360.0) * turning_circumference
+
+        rotations_needed = math.ceil(abs(travel_distance) / self.wheel_circumference)
+        target_steps = abs(rotations_needed * PULSES_PER_REVOLUTION * GEAR_RATIO)
+
+        if angle > 0:
             self.set_right_turn_speed(normalized_speed)
         else:
             self.set_left_turn_speed(normalized_speed)
 
-        print("lwv turn", self.devices.wheel_motors[Wheel.LEFT].value)
+        def ease(remaining_factor):
+            # Proportional deceleration; slow down for last 20% of turn
+                reduced_speed = normalized_speed * max(0.3, remaining_factor)
+                
+                if angle > 0:
+                    self.set_right_turn_speed(reduced_speed)
+                else:
+                    self.set_left_turn_speed(reduced_speed)
 
-        time.sleep(execution_time)
-
-        self.stop()
-        return True
+        res = self.wait_for_action(target_steps, ease)
+        return res
