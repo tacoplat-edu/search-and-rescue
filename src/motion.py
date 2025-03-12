@@ -4,7 +4,7 @@ import os
 
 from models.devices import DeviceConfiguration
 from models.wheel import Wheel
-
+from helpers.motion import assert_speed
 
 DEBUG = os.environ.get("DEBUG") == "true"
 
@@ -32,56 +32,39 @@ class MotionController:
         self.devices.wheel_encoders[Wheel.LEFT].steps = 0
         self.devices.wheel_encoders[Wheel.RIGHT].steps = 0
 
+    @assert_speed
     def set_forward_speed(self, speed: float, wheel: Wheel = Wheel.BOTH):
-        try:
-            assert 0 <= speed <= 1
-
-            if wheel == Wheel.BOTH:
-                self.set_forward_speed(speed, Wheel.LEFT)
-                self.set_forward_speed(speed, Wheel.RIGHT)
-            elif wheel == Wheel.LEFT:
-                self.devices.wheel_motors[Wheel.LEFT].forward(speed)
-            else:
-                self.devices.wheel_motors[Wheel.RIGHT].forward(speed)
-        except AssertionError:
-            print("Forward speed is not in range 0 to 1")
-
-    def set_reverse_speed(self, speed: float, wheel: Wheel = Wheel.BOTH):
-        try:
-            assert 0 <= speed <= 1
-
-            if wheel == Wheel.BOTH:
-                self.set_reverse_speed(speed, Wheel.LEFT)
-                self.set_reverse_speed(speed, Wheel.RIGHT)
-            elif wheel == Wheel.LEFT:
-                self.devices.wheel_motors[Wheel.LEFT].backward(speed)
-            else:
-                self.devices.wheel_motors[Wheel.RIGHT].backward(speed)
-        except AssertionError:
-            print("Reverse speed is not in range 0 to 1")
-
-    def set_right_turn_speed(self, speed: float):
-        try:
-            assert 0 <= speed <= 1
+        if wheel == Wheel.BOTH:
+            self.set_forward_speed(speed, Wheel.LEFT)
+            self.set_forward_speed(speed, Wheel.RIGHT)
+        elif wheel == Wheel.LEFT:
             self.devices.wheel_motors[Wheel.LEFT].forward(speed)
-            self.devices.wheel_motors[Wheel.RIGHT].backward(speed)
-        except AssertionError:
-            print("Right turn motor speed is not in range 0 to 1")
-
-    def set_left_turn_speed(self, speed: float):
-        try:
-            assert 0 <= speed <= 1
-            self.devices.wheel_motors[Wheel.LEFT].backward(speed)
+        else:
             self.devices.wheel_motors[Wheel.RIGHT].forward(speed)
-        except AssertionError:
-            print("Left turn motor speed is not in range 0 to 1")
 
+    @assert_speed
+    def set_reverse_speed(self, speed: float, wheel: Wheel = Wheel.BOTH):
+        if wheel == Wheel.BOTH:
+            self.set_reverse_speed(speed, Wheel.LEFT)
+            self.set_reverse_speed(speed, Wheel.RIGHT)
+        elif wheel == Wheel.LEFT:
+            self.devices.wheel_motors[Wheel.LEFT].backward(speed)
+        else:
+            self.devices.wheel_motors[Wheel.RIGHT].backward(speed)
+
+    @assert_speed
+    def set_right_turn_speed(self, speed: float):
+        self.devices.wheel_motors[Wheel.LEFT].forward(speed)
+        self.devices.wheel_motors[Wheel.RIGHT].backward(speed)
+
+    @assert_speed
+    def set_left_turn_speed(self, speed: float):
+        self.devices.wheel_motors[Wheel.LEFT].backward(speed)
+        self.devices.wheel_motors[Wheel.RIGHT].forward(speed)
+
+    @assert_speed
     def start(self, speed: float):
-        try:
-            assert 0 <= speed <= 1
-            self.set_forward_speed(speed)
-        except AssertionError:
-            print("Initial speed not in range 0 to 1")
+        self.set_forward_speed(speed)
 
     def stop(self):
         self.devices.wheel_motors[Wheel.LEFT].stop()
