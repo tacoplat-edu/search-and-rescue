@@ -88,7 +88,7 @@ class MotionController:
         self.devices.wheel_motors[Wheel.RIGHT].stop()
 
     def reverse(self, speed: float):
-        self.set_rever
+        self.set_reverse_speed(speed)
 
     def wait_for_action(self, target_steps, ease_func):
         try:

@@ -236,7 +236,11 @@ class VisionProcessor:
                     break
 
             # Always look for red if not for the other two colours
-            if path is not None and path_locs is not None:
+            if (
+                path is not None and 
+                path_locs is not None and
+                len(path_locs) == len(self.reference_locs)
+            ):
                 error = path_locs[-1][0] - self.reference_locs[-1][0]
 
                 current_time = time.time()
