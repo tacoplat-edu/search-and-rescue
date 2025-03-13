@@ -24,7 +24,7 @@ devices = (
     DeviceConfiguration(
         wheel_motors={
             Wheel.LEFT: Motor(5,6,enable=19),
-            Wheel.RIGHT: Motor(27,17,enable=12),
+            Wheel.RIGHT: Motor(17,27,enable=12),
         },
         wheel_encoders={
             Wheel.LEFT: RotaryEncoder(26,25, max_steps=9000),
