@@ -13,6 +13,7 @@ from helpers.vision import get_dot_locations
 
 FEED_WAIT_DELAY_MS = 1
 FRAME_SAMPLE_DELAY_S = 0.1
+PX_TO_CM = 16 / 640
 SHOW_IMAGES = os.environ.get("SHOW_IMAGE_WINDOW") == "true"
 
 class VisionProcessor:
@@ -32,7 +33,7 @@ class VisionProcessor:
         self.running = False
         self.capture = cv2.VideoCapture(0)
         self.rescue_state = RescueState()
-        self.pid_controller = PIDController(1, 1, 1)
+        self.pid_controller = PIDController(kp=1, ki=3, kd=0.5)
         self.motion = motion
         self.capture_config = config_params
 
@@ -240,7 +241,7 @@ class VisionProcessor:
                 path is not None and 
                 path_locs is not None
             ):
-                error = path_locs[-1][0] - self.reference_locs[-1][0]
+                error = (path_locs[-1][0] - self.reference_locs[-1][0]) * PX_TO_CM
                 print(error)
 
                 current_time = time.time()
