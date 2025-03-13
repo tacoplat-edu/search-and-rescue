@@ -169,7 +169,7 @@ class VisionProcessor:
                 self.capture.set(k, v)
             self.rescue_state = RescueState()
 
-        self.motion.start(self.motion.default_speed_ratio)
+        self.motion.start(self.motion.default_speed)
 
         while self.running:
             _, image = self.capture.read()  # camera frame, BGR
@@ -218,7 +218,7 @@ class VisionProcessor:
                     time.sleep(2.5)
                     res = self.motion.turn(180, 60)
                     if res:
-                        self.motion.start(self.motion.default_speed_ratio)
+                        self.motion.start(self.motion.default_speed)
                     self.rescue_state.is_figure_held = res
             # Look for green only
             elif (
