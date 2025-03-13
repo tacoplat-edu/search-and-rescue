@@ -31,6 +31,6 @@ devices = (
             Wheel.RIGHT: RotaryEncoder(23,24, max_steps=9000),
         },
         servo_motor=AngularServo(9, min_angle=-90, max_angle=90),
-        action_button=Button(10),
+        action_button=Button(16),
     )
 )

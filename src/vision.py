@@ -13,7 +13,8 @@ from helpers.vision import get_dot_locations
 
 FEED_WAIT_DELAY_MS = 1
 FRAME_SAMPLE_DELAY_S = 0.1
-PX_TO_CM = 16 / 640
+PX_TO_CM = 13 / 640
+CORRECTION_SCALE_FACTOR = 0.001
 SHOW_IMAGES = os.environ.get("SHOW_IMAGE_WINDOW") == "true"
 
 class VisionProcessor:
@@ -33,7 +34,7 @@ class VisionProcessor:
         self.running = False
         self.capture = cv2.VideoCapture(0)
         self.rescue_state = RescueState()
-        self.pid_controller = PIDController(kp=1, ki=3, kd=0.5)
+        self.pid_controller = PIDController(kp=1, ki=3, kd=0.5, scale_factor=CORRECTION_SCALE_FACTOR)
         self.motion = motion
         self.capture_config = config_params
 
@@ -242,13 +243,15 @@ class VisionProcessor:
                 path_locs is not None
             ):
                 error = (path_locs[-1][0] - self.reference_locs[-1][0]) * PX_TO_CM
-                print(error)
+                print("error", error)
 
                 current_time = time.time()
                 dt = current_time - self.pid_controller.prev_time
                 self.pid_controller.update_prev_time(current_time)
 
                 correction = self.pid_controller.compute_correction(error, dt)
+
+                print("correction:", correction)
 
                 self.motion.set_forward_speed(self.motion.default_speed - correction, Wheel.LEFT)
                 self.motion.set_forward_speed(self.motion.default_speed + correction, Wheel.RIGHT)
