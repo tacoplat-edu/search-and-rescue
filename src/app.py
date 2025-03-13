@@ -23,15 +23,15 @@ vp = VisionProcessor(
     },
 )
 
-#button = devices.action_button
-#def press_handler():
-#    vp.run()
-#    vp.running = False
-#button.when_pressed = press_handler
+button = devices.action_button
+def press_handler():
+   vp.run()
+   vp.running = False
+button.when_pressed = press_handler
 
-vp.run()
-
-"""if os.environ.get("DEBUG") == "true":
+#vp.run()
+""" 
+if os.environ.get("DEBUG") == "true":
     try:
         while True:
             state = button.pin.state
@@ -45,5 +45,6 @@ vp.run()
     finally:
         devices.servo_motor.close()
         devices.action_button.close()
-else:"""
-#pause()
+else:
+    pass """
+pause()
