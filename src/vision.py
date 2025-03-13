@@ -242,6 +242,7 @@ class VisionProcessor:
                 len(path_locs) == len(self.reference_locs)
             ):
                 error = path_locs[-1][0] - self.reference_locs[-1][0]
+                print(error)
 
                 current_time = time.time()
                 dt = current_time - self.pid_controller.prev_time
