@@ -25,6 +25,7 @@ vp = VisionProcessor(
 
 button = devices.action_button
 def press_handler():
+   print("what the sigma")
    vp.run()
    vp.running = False
 button.when_pressed = press_handler
