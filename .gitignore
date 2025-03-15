@@ -1,3 +1,6 @@
 .venv
-
+*.jpg
+*.txt
 __pycache__
+ml/yolo11n.pt
+*.cache
