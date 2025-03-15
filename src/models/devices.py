@@ -1,31 +1,36 @@
 # stdlib imports
+import os
 from dataclasses import dataclass
 
 # external imports
-import gpiozero
+from gpiozero import Device, Motor, Button, AngularServo, RotaryEncoder
+from gpiozero.pins.mock import MockFactory, MockPWMPin
 
 # local imports
 from models.wheel import Wheel
 
-DEBUG = True
-
+if os.environ.get("DEBUG") == "true":
+    Device.pin_factory = MockFactory(pin_class=MockPWMPin)
 
 @dataclass
 class DeviceConfiguration:
-    wheel_motors: dict[Wheel : gpiozero.Motor]
-    servo_motor: gpiozero.Motor
-    action_button: gpiozero.Button
+    wheel_motors: dict[Wheel : Motor]
+    wheel_encoders: dict[Wheel: RotaryEncoder]
+    servo_motor: Motor
+    action_button: Button
 
 
 devices = (
-    None
-    if DEBUG
-    else DeviceConfiguration(
+    DeviceConfiguration(
         wheel_motors={
-            Wheel.LEFT: gpiozero.Motor(23),
-            Wheel.RIGHT: gpiozero.Motor(17),
+            Wheel.LEFT: Motor(5,6,enable=19),
+            Wheel.RIGHT: Motor(27,17,enable=12),
         },
-        servo_motor=gpiozero.AngularServo(12, min_angle=-90, max_angle=90),
-        action_button=gpiozero.Button(24),
+        wheel_encoders={
+            Wheel.LEFT: RotaryEncoder(26,25, max_steps=9000),
+            Wheel.RIGHT: RotaryEncoder(23,24, max_steps=9000),
+        },
+        servo_motor=AngularServo(9, min_angle=-90, max_angle=90),
+        action_button=Button(10),
     )
 )
