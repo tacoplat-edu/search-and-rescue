@@ -1,0 +1,9 @@
+train: C:/Users/james/Documents/search-and-rescue/ml/dataset/images/train
+val: C:/Users/james/Documents/search-and-rescue/ml/dataset/images/val
+
+nc: 1
+names: ['lego_figure']
+
+labels:
+  train: dataset/labels/train
+  val: dataset/labels/val
