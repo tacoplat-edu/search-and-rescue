@@ -10,14 +10,14 @@ def run_webcam_detection():
     width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     
-    print(f"Webcam: {width}x{height} @")
+    print(f"Webcam: {width}x{height}")
     
     while True:
         ret, frame = cap.read()
         if not ret:
             print("Error: Failed to capture image")
             break
-        
+        # Tune minimum confidence to show figure later
         results = model(frame, conf=0.4)
         
         annotated_frame = results[0].plot()
