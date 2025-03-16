@@ -17,8 +17,8 @@ PX_TO_CM = 13 / 640
 CORRECTION_SCALE_FACTOR = 0.01
 SHOW_IMAGES = os.environ.get("SHOW_IMAGE_WINDOW") == "true"
 MAX_CORRECITON = 0.12
-MIN_SPEED = 0.22
-MAX_SPEED = 0.26
+MIN_SPEED = 0.24
+MAX_SPEED = 0.3
 
 class VisionProcessor:
     running: bool
@@ -37,7 +37,7 @@ class VisionProcessor:
         self.running = False
         self.capture = cv2.VideoCapture(0)
         self.rescue_state = RescueState()
-        self.p_controller = PController(kp=0.55, scale_factor=CORRECTION_SCALE_FACTOR)
+        self.p_controller = PController(kp=0.25, scale_factor=CORRECTION_SCALE_FACTOR)
         self.motion = motion
         self.capture_config = config_params
 
