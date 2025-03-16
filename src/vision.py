@@ -14,7 +14,7 @@ from helpers.vision import get_dot_locations
 FEED_WAIT_DELAY_MS = 1
 FRAME_SAMPLE_DELAY_S = 0.1
 PX_TO_CM = 13 / 640
-CORRECTION_SCALE_FACTOR = 0.001
+CORRECTION_SCALE_FACTOR = 0.01
 SHOW_IMAGES = os.environ.get("SHOW_IMAGE_WINDOW") == "true"
 
 class VisionProcessor:
@@ -34,7 +34,7 @@ class VisionProcessor:
         self.running = False
         self.capture = cv2.VideoCapture(0)
         self.rescue_state = RescueState()
-        self.p_controller = PController(kp=1, scale_factor=CORRECTION_SCALE_FACTOR)
+        self.p_controller = PController(kp=2.5, scale_factor=CORRECTION_SCALE_FACTOR)
         self.motion = motion
         self.capture_config = config_params
 
@@ -247,10 +247,16 @@ class VisionProcessor:
 
                 correction = self.p_controller.compute_correction(error)
 
-                print("correction:", correction)
-
-                self.motion.set_forward_speed(self.motion.default_speed - correction, Wheel.LEFT)
-                self.motion.set_forward_speed(self.motion.default_speed + correction, Wheel.RIGHT)
+                if abs(error) > 1.0 and abs(correction) < 0.05:
+                    correction = 0.05 * (-1 if error < 0 else 1)
+    
+                left_speed = max(0.1, min(1.0, self.motion.default_speed - correction))
+                right_speed = max(0.1, min(1.0, self.motion.default_speed + correction))
+                
+                print(f"Setting speeds: L={left_speed:.2f}, R={right_speed:.2f}")
+                
+                self.motion.set_forward_speed(left_speed, Wheel.LEFT)
+                self.motion.set_forward_speed(right_speed, Wheel.RIGHT)
 
             else:
                 # Need to run recalibration algorithm
