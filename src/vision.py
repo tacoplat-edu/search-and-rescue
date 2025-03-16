@@ -250,8 +250,8 @@ class VisionProcessor:
                 if abs(error) > 1.0 and abs(correction) < 0.05:
                     correction = 0.05 * (-1 if error < 0 else 1)
     
-                left_speed = max(0.1, min(1.0, self.motion.default_speed - correction))
-                right_speed = max(0.1, min(1.0, self.motion.default_speed + correction))
+                left_speed = max(0.1, min(1.0, self.motion.default_speed + correction))
+                right_speed = max(0.1, min(1.0, self.motion.default_speed - correction))
                 
                 print(f"Setting speeds: L={left_speed:.2f}, R={right_speed:.2f}")
                 
