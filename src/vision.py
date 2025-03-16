@@ -7,7 +7,7 @@ import numpy as np
 
 from motion import MotionController
 from models.rescue import RescueState
-from pid import PIDController
+from p_control import PController
 from models.wheel import Wheel
 from helpers.vision import get_dot_locations
 
@@ -24,7 +24,7 @@ class VisionProcessor:
     motion: MotionController
     rescue_state: RescueState
     reference_locs: list[int]
-    pid_controller: PIDController
+    p_controller: PController
 
     def __init__(
         self,
@@ -34,7 +34,7 @@ class VisionProcessor:
         self.running = False
         self.capture = cv2.VideoCapture(0)
         self.rescue_state = RescueState()
-        self.pid_controller = PIDController(kp=1, ki=3, kd=0.5, scale_factor=CORRECTION_SCALE_FACTOR)
+        self.p_controller = PController(kp=1, scale_factor=CORRECTION_SCALE_FACTOR)
         self.motion = motion
         self.capture_config = config_params
 
@@ -246,10 +246,10 @@ class VisionProcessor:
                 print("error", error)
 
                 current_time = time.time()
-                dt = current_time - self.pid_controller.prev_time
-                self.pid_controller.update_prev_time(current_time)
+                dt = current_time - self.p_controller.prev_time
+                self.p_controller.update_prev_time(current_time)
 
-                correction = self.pid_controller.compute_correction(error, dt)
+                correction = self.p_controller.compute_correction(error, dt)
 
                 print("correction:", correction)
 
