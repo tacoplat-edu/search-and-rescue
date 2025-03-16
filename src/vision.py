@@ -245,11 +245,7 @@ class VisionProcessor:
                 error = (path_locs[-1][0] - self.reference_locs[-1][0]) * PX_TO_CM
                 print("error", error)
 
-                current_time = time.time()
-                dt = current_time - self.p_controller.prev_time
-                self.p_controller.update_prev_time(current_time)
-
-                correction = self.p_controller.compute_correction(error, dt)
+                correction = self.p_controller.compute_correction(error)
 
                 print("correction:", correction)
 
