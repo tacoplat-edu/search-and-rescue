@@ -34,7 +34,7 @@ class VisionProcessor:
         self.running = False
         self.capture = cv2.VideoCapture(0)
         self.rescue_state = RescueState()
-        self.p_controller = PController(kp=0.75, scale_factor=CORRECTION_SCALE_FACTOR)
+        self.p_controller = PController(kp=0.55, scale_factor=CORRECTION_SCALE_FACTOR)
         self.motion = motion
         self.capture_config = config_params
 
