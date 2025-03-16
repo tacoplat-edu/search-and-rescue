@@ -242,7 +242,9 @@ class VisionProcessor:
                 path is not None and 
                 path_locs is not None
             ):
-                error = (path_locs[-1][0] - self.reference_locs[-1][0]) * PX_TO_CM
+                if len(path_locs) >= 1:
+                    error = (path_locs[0][0] - self.reference_locs[0][0]) * PX_TO_CM
+                
                 print("error", error)
 
                 correction = self.p_controller.compute_correction(error)
@@ -250,8 +252,12 @@ class VisionProcessor:
                 if abs(error) > 1.0 and abs(correction) < 0.05:
                     correction = 0.05 * (-1 if error < 0 else 1)
     
-                left_speed = max(0.1, min(1.0, self.motion.default_speed + correction))
-                right_speed = max(0.1, min(1.0, self.motion.default_speed - correction))
+                max_correction = 0.12
+                correction = max(-max_correction, min(max_correction, correction))
+
+                max_speed = 0.3
+                left_speed = max(0.1, min(max_speed, self.motion.default_speed + correction))
+                right_speed = max(0.1, min(max_speed, self.motion.default_speed - correction))
                 
                 print(f"Setting speeds: L={left_speed:.2f}, R={right_speed:.2f}")
                 
