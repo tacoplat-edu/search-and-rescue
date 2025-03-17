@@ -288,7 +288,7 @@ class VisionProcessor:
 
                     if self.last_error < 0:
                         left_speed = MIN_SPEED
-                        right_speed = min(MAX_SPEED, default_speed+ self.last_correction)
+                        right_speed = min(MAX_SPEED, default_speed - self.last_correction)
                         print("Last seen line on left, moving right wheel")
                     else:
                         left_speed = min(MAX_SPEED, default_speed + self.last_correction)
@@ -303,11 +303,11 @@ class VisionProcessor:
                 else:
                     print("Spinning to find line")
                     if self.last_error < 0:
-                        self.motion.set_reverse_speed(0.48, Wheel.LEFT)
-                        self.motion.set_forward_speed(0.48, Wheel.RIGHT)
+                        self.motion.set_reverse_speed(0.45, Wheel.LEFT)
+                        self.motion.set_forward_speed(0.45, Wheel.RIGHT)
                     else:
-                        self.motion.set_forward_speed(0.48, Wheel.LEFT)
-                        self.motion.set_reverse_speed(0.48, Wheel.RIGHT)
+                        self.motion.set_forward_speed(0.45, Wheel.LEFT)
+                        self.motion.set_reverse_speed(0.45, Wheel.RIGHT)
 
             if cv2.waitKey(FEED_WAIT_DELAY_MS) & 0xFF == ord("q"):
                 break
