@@ -16,9 +16,9 @@ FRAME_SAMPLE_DELAY_S = 0.1
 PX_TO_CM = 13 / 640
 CORRECTION_SCALE_FACTOR = 0.01
 SHOW_IMAGES = os.environ.get("SHOW_IMAGE_WINDOW") == "true"
-MAX_CORRECITON = 0.1
+MAX_CORRECITON = 0.07
 MIN_SPEED = 0.28
-MAX_SPEED = 0.40
+MAX_SPEED = 0.35
 
 
 class VisionProcessor:
@@ -261,7 +261,7 @@ class VisionProcessor:
                 default_speed = self.motion.default_speed
 
                 # Try only adjusting one motor for p-control at a time when correction is large
-                if abs(correction) < 0.05:
+                if abs(correction) == MAX_CORRECITON:
                     left_speed = max(MIN_SPEED, min(MAX_SPEED, default_speed + correction))
                     right_speed = max(MIN_SPEED, min(MAX_SPEED, default_speed - correction))
                 else:
@@ -303,11 +303,11 @@ class VisionProcessor:
                 else:
                     print("Spinning to find line")
                     if self.last_error < 0:
-                        self.motion.set_reverse_speed(0.45, Wheel.LEFT)
-                        self.motion.set_forward_speed(0.45, Wheel.RIGHT)
+                        self.motion.set_reverse_speed(0.40, Wheel.LEFT)
+                        self.motion.set_forward_speed(0.40, Wheel.RIGHT)
                     else:
-                        self.motion.set_forward_speed(0.45, Wheel.LEFT)
-                        self.motion.set_reverse_speed(0.45, Wheel.RIGHT)
+                        self.motion.set_forward_speed(0.40, Wheel.LEFT)
+                        self.motion.set_reverse_speed(0.40, Wheel.RIGHT)
 
             if cv2.waitKey(FEED_WAIT_DELAY_MS) & 0xFF == ord("q"):
                 break
