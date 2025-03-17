@@ -20,6 +20,7 @@ MAX_CORRECITON = 0.1
 MIN_SPEED = 0.28
 MAX_SPEED = 0.45
 
+
 class VisionProcessor:
     running: bool
     capture: cv2.VideoCapture
@@ -46,10 +47,7 @@ class VisionProcessor:
 
         width = self.capture.get(cv2.CAP_PROP_FRAME_WIDTH)
         y_locs = get_dot_locations(self.capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
-        self.reference_locs = [
-            (int(width // 2), y_loc)
-            for y_loc in y_locs
-        ]
+        self.reference_locs = [(int(width // 2), y_loc) for y_loc in y_locs]
 
     def get_path_mask(self, image):
         if image is None:
@@ -91,19 +89,19 @@ class VisionProcessor:
         mask = cv2.inRange(hsv_image, green_lower, green_upper)
 
         return cv2.bitwise_and(image, image, mask=mask)
-    
+
     def detect_special_contours(self, mask, threshold: int = 50):
         if mask is None:
             return None
-        
+
         grayscale = cv2.cvtColor(mask, cv2.COLOR_BGR2GRAY)
         contours, _ = cv2.findContours(grayscale, cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE)
-        
+
         if contours:
             primary = max(contours, key=cv2.contourArea)
             if cv2.contourArea(primary) > threshold:
                 return primary
-        
+
         return None
 
     """
@@ -111,9 +109,7 @@ class VisionProcessor:
         centreline with the same y-values as the reference coordinates (blue).
     """
 
-    def get_path_data(
-        self, mask
-    ):
+    def get_path_data(self, mask):
         if mask is None:
             return None, None
 
@@ -154,10 +150,7 @@ class VisionProcessor:
             else:
                 if path_locs is not None:
                     dx = path_locs[-1][0] - self.reference_locs[-1][0]
-                    dy = int(
-                        image.shape[0]
-                        - self.reference_locs[-1][0]
-                    )
+                    dy = int(image.shape[0] - self.reference_locs[-1][0])
 
                     theta = math.atan(dx / dy)
 
@@ -180,7 +173,9 @@ class VisionProcessor:
             _, image = self.capture.read()  # camera frame, BGR
 
             path_mask = self.get_path_mask(image)
-            path, path_locs = self.get_path_data(path_mask) # Purple dots along path centreline
+            path, path_locs = self.get_path_data(
+                path_mask
+            )  # Purple dots along path centreline
 
             # Draw blue dots
             for loc in self.reference_locs:
@@ -207,9 +202,9 @@ class VisionProcessor:
                 cv2.imshow("Image", image)
 
             print(
-                "motor state", 
+                "motor state",
                 self.motion.devices.wheel_motors[Wheel.LEFT].value,
-                self.motion.devices.wheel_motors[Wheel.RIGHT].value
+                self.motion.devices.wheel_motors[Wheel.RIGHT].value,
             )
 
             # Look for blue only
@@ -231,7 +226,7 @@ class VisionProcessor:
                 and self.rescue_state.is_figure_held
             ):
                 if safe is not None:
-                    print('green detected')
+                    print("green detected")
                     self.motion.stop()
                     time.sleep(2.5)
                     self.motion.move(-45, 6)
@@ -241,37 +236,34 @@ class VisionProcessor:
                     break
 
             # Always look for red if not for the other two colours
-            if (
-                path is not None and 
-                path_locs is not None
-            ):
+            if path is not None and path_locs is not None:
                 if len(path_locs) >= 1:
                     error = (path_locs[0][0] - self.reference_locs[0][0]) * PX_TO_CM
-                
+
                 print("error", error)
 
                 correction = self.p_controller.compute_correction(error)
 
                 if abs(error) > 1.0 and abs(correction) < 0.05:
                     correction = 0.05 * (-1 if error < 0 else 1)
-    
+
                 correction = max(-MAX_CORRECITON, min(MAX_CORRECITON, correction))
 
                 default_speed = self.motion.default_speed
 
                 # Try only adjusting one motor for p-control at a time
-                if correction > 0:  
+                if correction > 0:
                     left_speed = min(MAX_SPEED, default_speed + correction)
-                    right_speed = MIN_SPEED  
-                elif correction < 0:  
-                    left_speed = MIN_SPEED  
+                    right_speed = MIN_SPEED
+                elif correction < 0:
+                    left_speed = MIN_SPEED
                     right_speed = min(MAX_SPEED, default_speed - correction)
-                else: 
+                else:
                     left_speed = default_speed
                     right_speed = default_speed
-                
+
                 print(f"Setting speeds: L={left_speed:.2f}, R={right_speed:.2f}")
-                
+
                 self.motion.set_forward_speed(left_speed, Wheel.LEFT)
                 self.motion.set_forward_speed(right_speed, Wheel.RIGHT)
 
