@@ -282,7 +282,7 @@ class VisionProcessor:
                 # Need to run recalibration algorithm
                 self.blind_frames += 1
                 if self.blind_frames < self.max_blind_recovery:
-                    print("Cant see line")
+                    print(f"Cant see line, last error is {self.last_error}")
 
                     default_speed = self.motion.default_speed
 
@@ -303,11 +303,11 @@ class VisionProcessor:
                 else:
                     print("Spinning to find line")
                     if self.last_error < 0:
-                        self.motion.set_reverse_speed(0.6, Wheel.LEFT)
-                        self.motion.set_forward_speed(0.6, Wheel.RIGHT)
+                        self.motion.set_reverse_speed(0.46, Wheel.LEFT)
+                        self.motion.set_forward_speed(0.46, Wheel.RIGHT)
                     else:
-                        self.motion.set_forward_speed(0.6, Wheel.LEFT)
-                        self.motion.set_reverse_speed(0.6, Wheel.RIGHT)
+                        self.motion.set_forward_speed(0.46, Wheel.LEFT)
+                        self.motion.set_reverse_speed(0.46, Wheel.RIGHT)
 
             if cv2.waitKey(FEED_WAIT_DELAY_MS) & 0xFF == ord("q"):
                 break
