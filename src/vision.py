@@ -42,6 +42,11 @@ class VisionProcessor:
         self.motion = motion
         self.capture_config = config_params
 
+        self.last_error = 0
+        self.last_correction = 0
+        self.blind_frames = 0
+        self.max_blind_recovery = 20
+
         for k, v in self.capture_config.items():
             self.capture.set(k, v)
 
@@ -239,10 +244,14 @@ class VisionProcessor:
             if path is not None and path_locs is not None:
                 if len(path_locs) >= 1:
                     error = (path_locs[0][0] - self.reference_locs[0][0]) * PX_TO_CM
+                    self.blind_frames = 0 
 
                 print("error", error)
 
                 correction = self.p_controller.compute_correction(error)
+
+                self.last_error = error
+                self.last_correction = correction
 
                 if abs(error) > 1.0 and abs(correction) < 0.05:
                     correction = 0.05 * (-1 if error < 0 else 1)
@@ -251,16 +260,18 @@ class VisionProcessor:
 
                 default_speed = self.motion.default_speed
 
-                # Try only adjusting one motor for p-control at a time
-                if correction > 0:
-                    left_speed = min(MAX_SPEED, default_speed + correction)
-                    right_speed = MIN_SPEED
-                elif correction < 0:
-                    left_speed = MIN_SPEED
-                    right_speed = min(MAX_SPEED, default_speed - correction)
+                # Try only adjusting one motor for p-control at a time when correction is large
+                if abs(correction) < 0.05:
+                    left_speed = max(MIN_SPEED, min(MAX_SPEED, default_speed + correction))
+                    right_speed = max(MIN_SPEED, min(MAX_SPEED, default_speed - correction))
                 else:
-                    left_speed = default_speed
-                    right_speed = default_speed
+                    if correction > 0:  
+                        left_speed = min(MAX_SPEED, default_speed + correction)
+                        right_speed = max(MIN_SPEED, default_speed )
+                    else: 
+                        left_speed = max(MIN_SPEED, default_speed)
+                        right_speed = min(MAX_SPEED, default_speed - correction)
+    
 
                 print(f"Setting speeds: L={left_speed:.2f}, R={right_speed:.2f}")
 
@@ -269,7 +280,34 @@ class VisionProcessor:
 
             else:
                 # Need to run recalibration algorithm
-                pass
+                self.blind_frames += 1
+                if self.blind_frames < self.max_blind_recovery:
+                    print("Cant see line")
+
+                    default_speed = self.motion.default_speed
+
+                    if self.last_error < 0:
+                        left_speed = MIN_SPEED
+                        right_speed = default_speed+ self.last_correction
+                        print("Last seen line on left, moving right wheel")
+                    else:
+                        left_speed = default_speed + self.last_correction
+                        right_speed = MIN_SPEED 
+                        print("Last seen line on right, moving left wheel")
+                    
+                    print(f"Recovery speeds: L={left_speed:.2f}, R={right_speed:.2f}")
+                    
+                    self.motion.set_forward_speed(left_speed, Wheel.LEFT)
+                    self.motion.set_forward_speed(right_speed, Wheel.RIGHT)
+                    
+                else:
+                    print("Spinning to find line")
+                    if self.last_error < 0:
+                        self.motion.set_reverse_speed(0.3, Wheel.LEFT)
+                        self.motion.set_forward_speed(0.3, Wheel.RIGHT)
+                    else:
+                        self.motion.set_forward_speed(0.3, Wheel.LEFT)
+                        self.motion.set_reverse_speed(0.3, Wheel.RIGHT)
 
             if cv2.waitKey(FEED_WAIT_DELAY_MS) & 0xFF == ord("q"):
                 break
