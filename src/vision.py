@@ -257,8 +257,18 @@ class VisionProcessor:
     
                 correction = max(-MAX_CORRECITON, min(MAX_CORRECITON, correction))
 
-                left_speed = max(MIN_SPEED, min(MAX_SPEED, self.motion.default_speed + correction))
-                right_speed = max(MIN_SPEED, min(MAX_SPEED, self.motion.default_speed - correction))
+                default_speed = self.motion.default_speed
+
+                # Try only adjusting one motor for p-control at a time
+                if correction > 0:  
+                    left_speed = min(MAX_SPEED, default_speed + correction)
+                    right_speed = MIN_SPEED  
+                elif correction < 0:  
+                    left_speed = MIN_SPEED  
+                    right_speed = min(MAX_SPEED, default_speed - correction)
+                else: 
+                    left_speed = default_speed
+                    right_speed = default_speed
                 
                 print(f"Setting speeds: L={left_speed:.2f}, R={right_speed:.2f}")
                 
