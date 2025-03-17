@@ -288,10 +288,10 @@ class VisionProcessor:
 
                     if self.last_error < 0:
                         left_speed = MIN_SPEED
-                        right_speed = default_speed+ self.last_correction
+                        right_speed = min(MAX_SPEED, default_speed+ self.last_correction)
                         print("Last seen line on left, moving right wheel")
                     else:
-                        left_speed = default_speed + self.last_correction
+                        left_speed = min(MAX_SPEED, default_speed + self.last_correction)
                         right_speed = MIN_SPEED 
                         print("Last seen line on right, moving left wheel")
                     
