@@ -128,14 +128,13 @@ class VisionProcessor:
             for i in range(len(self.reference_locs)):
                 abs_y = self.reference_locs[i][1]
 
-                contour_points = [pt[0] for pt in primary_contour if pt[0][1] == abs_y]
+                tolerance = 2
+                contour_points = [pt[0] for pt in primary_contour if abs(pt[0][1] - abs_y) <= tolerance]
                 if contour_points:
                     abs_x = int(np.mean([pt[0] for pt in contour_points]))
                     locs.append((abs_x, abs_y))
 
-                if not locs:
-                    return primary_contour, None
-            return primary_contour, locs
+            return primary_contour, locs if locs else None 
 
         return None, None
 
@@ -243,7 +242,8 @@ class VisionProcessor:
             # Always look for red if not for the other two colours
             if path is not None and path_locs is not None:
                 if len(path_locs) >= 1:
-                    error = (path_locs[0][0] - self.reference_locs[0][0]) * PX_TO_CM
+                    top_index = len(path_locs) - 1 
+                    error = (path_locs[top_index][0] - self.reference_locs[top_index][0]) * PX_TO_CM
                     self.blind_frames = 0 
 
                 print("error", error)
