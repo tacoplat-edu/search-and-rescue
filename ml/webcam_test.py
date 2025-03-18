@@ -2,17 +2,17 @@ import cv2
 import numpy as np
 
 def run_webcam_detection():
-    model_path = "../runs/detect/train5/weights/best.onnx"
+    model_path = "../runs/detect/train/weights/best.onnx"
     net = cv2.dnn.readNetFromONNX(model_path)
     
     cap = cv2.VideoCapture(0)
-    cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
-    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+    cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
     width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     print(f"Webcam: {width}x{height}")
     
-    input_size = 416  
+    input_size = 640  
     
     purple_color = (255, 0, 255)  
     
