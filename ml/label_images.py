@@ -62,75 +62,30 @@ def batch_label_by_pattern(template_bbox, image_folder, output_folder, filename_
             
             print(f"Label created for {image_path}")
 
+def process_folder(images_folder, labels_folder, class_id=0, max_display_size=800):
+    """Process all images in a folder for manual labeling"""
+    if not os.path.exists(labels_folder):
+        os.makedirs(labels_folder)
+    
+    images = [f for f in os.listdir(images_folder) if f.endswith(('.jpg', '.jpeg', '.png'))]
+    total_images = len(images)
+    
+    print(f"Found {total_images} images in {images_folder}")
+    
+    for i, filename in enumerate(images):
+        image_path = os.path.join(images_folder, filename)
+        print(f"Processing image {i+1}/{total_images}: {filename}")
+        create_label(image_path, labels_folder, class_id, max_display_size)
+
 if __name__ == "__main__":
     train_folder = "dataset/images/train"
     labels_folder = "dataset/labels/train"
+    val_folder = "dataset/images/val"
+    val_labels_folder = "dataset/labels/val"
     
     if not os.path.exists(labels_folder):
         os.makedirs(labels_folder)
     
-    first_image = "dataset/images/train/000_1.jpg"  
-
-    print("Draw bounding box for the standard variation (no _m in filename)")
-    template_bbox1 = create_label(first_image, labels_folder, max_display_size=800)
+    process_folder(train_folder, labels_folder)
+    process_folder(val_folder, val_labels_folder)
     
-    for filename in os.listdir(train_folder):
-        if filename.endswith('.jpg') and "_m" not in filename:
-            image_path = os.path.join(train_folder, filename)
-            if image_path != first_image: 
-                img = cv2.imread(image_path)
-                height, width = img.shape[:2]
-                
-                x, y, w, h = template_bbox1
-                x_center = (x + w/2) / width
-                y_center = (y + h/2) / height
-                norm_width = w / width
-                norm_height = h / height
-                
-                image_name = os.path.basename(image_path).split('.')[0]
-                label_path = os.path.join(labels_folder, f"{image_name}.txt")
-                
-                with open(label_path, 'w') as f:
-                    f.write(f"0 {x_center} {y_center} {norm_width} {norm_height}")
-                
-                print(f"Label created for {image_path}")
-    
-    second_image = "dataset/images/train/000_1_m.jpg" 
-
-    print("Draw bounding box for the modified variation (_m in filename)")
-    template_bbox2 = create_label(second_image, labels_folder, max_display_size=800)
-    
-    for filename in os.listdir(train_folder):
-        if filename.endswith('.jpg') and "_m" in filename:
-            image_path = os.path.join(train_folder, filename)
-            if image_path != second_image:  
-                img = cv2.imread(image_path)
-                height, width = img.shape[:2]
-                
-                x, y, w, h = template_bbox2
-                x_center = (x + w/2) / width
-                y_center = (y + h/2) / height
-                norm_width = w / width
-                norm_height = h / height
-                
-                image_name = os.path.basename(image_path).split('.')[0]
-                label_path = os.path.join(labels_folder, f"{image_name}.txt")
-                
-                with open(label_path, 'w') as f:
-                    f.write(f"0 {x_center} {y_center} {norm_width} {norm_height}")
-                
-                print(f"Label created for {image_path}")
-    
-    val_images_folder = "dataset/images/val" 
-    val_labels_folder = "dataset/labels/val"
-    
-    if not os.path.exists(val_labels_folder):
-        os.makedirs(val_labels_folder)
-    
-    print("Now labeling validation images one by one...")
-    for filename in os.listdir(val_images_folder):
-        if filename.endswith('.jpg') or filename.endswith('.png'):
-            image_path = os.path.join(val_images_folder, filename)
-            create_label(image_path, val_labels_folder, max_display_size=800)
-    
-    print("All images have been labeled!")
