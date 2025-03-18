@@ -1,9 +1,10 @@
-train: dataset/images/train
-val: dataset/images/val
+path: C:\Users\james\Documents\search-and-rescue\ml\dataset
+train: images/train
+val: images/val
 
 nc: 1
 names: ['lego_figure']
 
 labels:
-  train: dataset/labels/train
-  val: dataset/labels/val
+  train: labels/train
+  val: labels/val
