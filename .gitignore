@@ -4,3 +4,4 @@
 __pycache__
 ml/yolo11n.pt
 *.cache
+*.npy
