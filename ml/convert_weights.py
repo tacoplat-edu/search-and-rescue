@@ -5,7 +5,7 @@ model = YOLO("../runs/detect/train/weights/best.pt")
 
 # Export the model
 model.export(format="onnx",
-             opset=11,        
+             opset=12,        
              simplify=True,     
              dynamic=False,  
              half=False) 
