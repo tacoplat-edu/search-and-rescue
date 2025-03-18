@@ -1,8 +1,8 @@
 import os
 import cv2
 
-input_dir = "background_iamges"
-output_dir = "resized_background_images"
+input_dir = "modified_images"
+output_dir = "resized_modified_images"
 
 if not os.path.exists(output_dir):
     os.makedirs(output_dir)
