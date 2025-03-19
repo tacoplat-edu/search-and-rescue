@@ -114,6 +114,56 @@ class VisionProcessor:
         centreline with the same y-values as the reference coordinates (blue).
     """
 
+    def get_danger_data(self, image):
+        """Returns blue contour, center, and border data for better alignment"""
+        if image is None:
+            return None, None, None
+        
+        danger_mask = self.get_danger_mask(image)
+        if danger_mask is None:
+            return None, None, None
+        
+        grayscale = cv2.cvtColor(danger_mask, cv2.COLOR_BGR2GRAY)
+        contours, _ = cv2.findContours(grayscale, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        
+        if not contours:
+            return None, None, None
+        
+        blue_contour = max(contours, key=cv2.contourArea)
+        if cv2.contourArea(blue_contour) < 300:  
+            return None, None, None
+        
+        M = cv2.moments(blue_contour)
+        if M["m00"] == 0:
+            return blue_contour, None, None
+        
+        center_x = int(M["m10"] / M["m00"])
+        center_y = int(M["m01"] / M["m00"])
+        center = (center_x, center_y)
+        
+        frame_width = image.shape[1]
+        frame_center_x = frame_width // 2
+        
+        leftmost = tuple(blue_contour[blue_contour[:, :, 0].argmin()][0])
+        rightmost = tuple(blue_contour[blue_contour[:, :, 0].argmax()][0])
+        
+        border_margin = 5  
+        touches_left = leftmost[0] <= border_margin
+        touches_right = rightmost[0] >= frame_width - border_margin
+        
+        alignment_data = {
+            'center': center,
+            'leftmost': leftmost,
+            'rightmost': rightmost,
+            'width': rightmost[0] - leftmost[0],
+            'x_offset': center_x - frame_center_x,
+            'y_position': center_y / image.shape[0],
+            'touches_left': touches_left,
+            'touches_right': touches_right,
+            'touches_border': touches_left or touches_right
+        }
+        
+        return alignment_data
     def get_path_data(self, mask):
         if mask is None:
             return None, None
@@ -220,9 +270,42 @@ class VisionProcessor:
                     print("blue detected")
                     self.motion.stop()
                     time.sleep(2.5)
-                    res = self.motion.turn(180, 60)
-                    if res:
-                        self.motion.start(self.motion.default_speed)
+
+                danger_data = self.get_danger_data(image)
+                
+                if danger_data: 
+                    touches_left = danger_data['touches_left']
+                    touches_right = danger_data['touches_right']
+                    
+                    if touches_left or touches_right:
+                        if touches_left and not touches_right:
+                            self.motion.turn(-15, 40)
+                            time.sleep(1.0)
+                            continue
+                            
+                        elif touches_right and not touches_left:
+                            self.motion.turn(15, 40) 
+                            time.sleep(1.0)  
+                            continue
+                            
+                        elif touches_left and touches_right:
+                            self.motion.move(-10, 25)  
+                            time.sleep(1.0)
+                            continue
+                    
+                    # Align with center of the blue target
+                    x_offset = danger_data['x_offset']
+                    if abs(x_offset) > 40:
+                        print(f"Aligning with blue target, offset: {x_offset}px")
+                        
+                        turn_angle = x_offset * 0.1
+                        self.motion.turn(turn_angle, 40)
+                        time.sleep(1.0)
+                        continue
+                    
+                    # Target is centered, move forward  
+                    print("Blue target centered - performing pickup")
+                    res = self.motion.move(20, 25)
                     self.rescue_state.is_figure_held = res
             # Look for green only
             elif (
