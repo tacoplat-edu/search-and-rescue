@@ -1,23 +1,33 @@
+from ultralytics import YOLO
 import cv2
-import numpy as np
+import time
+import os
 
 def run_webcam_detection():
-    model_xml = "../runs/detect/train/weights/best_openvino_model/model.xml"
-    model_bin = "../runs/detect/train/weights/best_openvino_model/yolo11n_openvino_model/model.bin"
-    net = cv2.dnn.readNet(model_xml, model_bin)
+    model_path = "../runs/detect/train/weights/best_ncnn_model"
     
-    print(f"OpenCV version: {cv2.__version__}")
+    if not os.path.exists(model_path):
+        print(f"Error: NCNN model directory not found at: {model_path}")
+        return
     
+
+    model = YOLO(model_path)
+    print("Model loaded successfully!")
+
     cap = cv2.VideoCapture(0)
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
-    frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-    frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    print(f"Webcam: {frame_width}x{frame_height}")
     
-    input_size = 640 
-    conf_threshold = 0.4
+    if not cap.isOpened():
+        print("Error: Failed to open webcam")
+        return
+    
+    width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    print(f"Webcam: {width}x{height}")
+    
     purple_color = (255, 0, 255)
+    conf_threshold = 0.4
     
     while True:
         ret, frame = cap.read()
@@ -25,60 +35,42 @@ def run_webcam_detection():
             print("Error: Failed to capture image")
             break
         
-        blob = cv2.dnn.blobFromImage(
-            frame, 
-            scalefactor=1/255.0,  
-            size=(input_size, input_size),  
-            mean=(0, 0, 0),
-            swapRB=True,  
-            crop=False
-        )
-        
-        net.setInput(blob)
-        
         try:
-            outputs = net.forward()
+            start_time = time.time()
+            results = model(frame, conf=conf_threshold)
+            inference_time = time.time() - start_time
+            fps = 1.0 / inference_time
             
             result_frame = frame.copy()
-            output = outputs[0]
-            print(f"Output shape: {output.shape}")
+            
+            for r in results:
+                boxes = r.boxes
+                
+                for box in boxes:
+                    x1, y1, x2, y2 = map(int, box.xyxy[0].tolist())
+ 
+                    conf = float(box.conf[0])
 
-            if output.shape[0] == 1 and (output.shape[1] == 5 or output.shape[2] == 5):
-                output = np.transpose(output, (2, 1)) if output.shape[2] == 5 else output
-                x_scale = frame_width / input_size
-                y_scale = frame_height / input_size
-                
-                boxes = []
-                scores = []
-                
-                for detection in output:
-                    confidence = float(detection[4])
-                    if confidence >= conf_threshold:
-                        cx, cy, w, h = detection[0:4]
-                        x = int((cx - w/2) * x_scale)
-                        y = int((cy - h/2) * y_scale)
-                        w_box = int(w * x_scale)
-                        h_box = int(h * y_scale)
-                        boxes.append([x, y, w_box, h_box])
-                        scores.append(confidence)
-                
-                if boxes:
-                    indices = cv2.dnn.NMSBoxes(boxes, scores, conf_threshold, 0.5)
-                    for i in indices:
+                    cv2.rectangle(result_frame, (x1, y1), (x2, y2), purple_color, 2)
+                    
+                    conf_percentage = f"{int(conf * 100)}%"
+                    text_size = cv2.getTextSize(conf_percentage, cv2.FONT_HERSHEY_SIMPLEX, 0.7, 2)[0]
+                    
+                    cv2.rectangle(result_frame, 
+                                (x1, y1 - text_size[1] - 10), 
+                                (x1 + text_size[0], y1), 
+                                purple_color, -1)
+                    
+                    cv2.putText(result_frame, 
+                            conf_percentage, 
+                            (x1, y1 - 5), 
+                            cv2.FONT_HERSHEY_SIMPLEX, 
+                            0.7, (255, 255, 255), 2)
             
-                        if isinstance(i, (list, tuple, np.ndarray)):
-                            i = i[0]
-                        x, y, w_box, h_box = boxes[i]
-                        x = max(0, x)
-                        y = max(0, y)
-                        w_box = min(w_box, frame_width - x)
-                        h_box = min(h_box, frame_height - y)
-                        cv2.rectangle(result_frame, (x, y), (x + w_box, y + h_box), purple_color, 2)
-                        label = f"{int(scores[i] * 100)}%"
-                        cv2.putText(result_frame, label, (x, y - 10),
-                                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, purple_color, 2)
+            cv2.putText(result_frame, f"FPS: {fps:.1f}", (10, 30),
+                      cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
             
-            cv2.imshow("Detection", result_frame)
+            cv2.imshow("NCNN Detection", result_frame)
             
         except Exception as e:
             print(f"Error during detection: {e}")
@@ -93,4 +85,5 @@ def run_webcam_detection():
     cv2.destroyAllWindows()
 
 if __name__ == "__main__":
+    print(f"OpenCV version: {cv2.__version__}")
     run_webcam_detection()
