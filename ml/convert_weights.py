@@ -4,10 +4,9 @@ from ultralytics import YOLO
 model = YOLO("../runs/detect/train/weights/best.pt")
 
 # Export the model
-model.export(format="onnx",
-             opset=9,        
+model.export(format="openvino",   
              imgsz = 640,
-             simplify=True,     
+             simplify=False,     
              dynamic=False,
              nms=False,
              half=False) 
