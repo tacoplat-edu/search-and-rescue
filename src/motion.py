@@ -26,7 +26,7 @@ class MotionController:
         self.wheel_diameter = 7
         self.wheel_distance = 18.25
         self.wheel_circumference = 2 * math.pi * self.wheel_diameter/2  
-        self.default_speed = 0.28
+        self.default_speed = 0.32
 
     def reset_encoders(self):
         self.devices.wheel_encoders[Wheel.LEFT].steps = 0
