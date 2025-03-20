@@ -18,7 +18,7 @@ CORRECTION_SCALE_FACTOR = 0.01
 SHOW_IMAGES = os.environ.get("SHOW_IMAGE_WINDOW") == "true"
 MAX_CORRECITON = 0.09
 MIN_SPEED = 0.30
-MAX_SPEED = 0.44
+MAX_SPEED = 0.42
 
 
 class VisionProcessor:
@@ -115,27 +115,26 @@ class VisionProcessor:
     """
 
     def get_danger_data(self, image):
-        """Returns blue contour, center, and border data for better alignment"""
         if image is None:
-            return None, None, None
+            return None
         
         danger_mask = self.get_danger_mask(image)
         if danger_mask is None:
-            return None, None, None
+            return None
         
         grayscale = cv2.cvtColor(danger_mask, cv2.COLOR_BGR2GRAY)
         contours, _ = cv2.findContours(grayscale, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         
         if not contours:
-            return None, None, None
+            return None
         
         blue_contour = max(contours, key=cv2.contourArea)
         if cv2.contourArea(blue_contour) < 300:  
-            return None, None, None
+            return None
         
         M = cv2.moments(blue_contour)
         if M["m00"] == 0:
-            return blue_contour, None, None
+            return None
         
         center_x = int(M["m10"] / M["m00"])
         center_y = int(M["m01"] / M["m00"])
