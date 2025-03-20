@@ -3,7 +3,7 @@ import time
 from ..motion import MotionController
 from ..motion import MAX_SPEED
 
-from models.devices import devices
+from ..models.devices import devices
 
 motion = MotionController(devices)
 
