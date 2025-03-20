@@ -1,17 +1,25 @@
+import os
 import cv2
 import time
 import numpy as np
-import os
+from signal import pause
+
+# Set environment variables first
+os.environ["OPENCV_VIDEOIO_MSMF_ENABLE_HW_TRANSFORMS"] = "0"
+from dotenv import load_dotenv
+load_dotenv()
+
+# Import your existing classes
+from motion import MotionController
 from models.wheel import Wheel
-from models.devices import DeviceConfiguration
-from helpers.motion import MotionController
+from models.devices import devices
 
 class LineFollowingRobot:
     def __init__(self, devices):
         # Initialize camera
         self.capture = cv2.VideoCapture(0)
-        self.capture.set(cv2.CAP_PROP_FRAME_WIDTH, 320)  # Use lower resolution for better performance
-        self.capture.set(cv2.CAP_PROP_FRAME_HEIGHT, 240)
+        self.capture.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)  # Use lower resolution for better performance
+        self.capture.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
         
         # Verify actual camera resolution
         ret, test_frame = self.capture.read()
@@ -36,6 +44,9 @@ class LineFollowingRobot:
         self.LEFT_THRESHOLD = int(width * 0.6)    # Turn left if center_x > this value
         self.RIGHT_THRESHOLD = int(width * 0.4)   # Turn right if center_x < this value
         
+        # Control flag
+        self.running = False
+        
     def get_red_mask(self, image):
         """Detect red line"""
         if image is None:
@@ -54,8 +65,11 @@ class LineFollowingRobot:
         return mask
     
     def run(self):
+        self.running = True
+        print("Starting line following robot...")
+        
         try:
-            while True:
+            while self.running:
                 ret, frame = self.capture.read()
                 if not ret:
                     print("Failed to capture image")
@@ -140,22 +154,35 @@ class LineFollowingRobot:
                 
                 # Exit on 'q' key
                 if cv2.waitKey(1) & 0xFF == ord('q'):
+                    self.running = False
                     break
                 
                 time.sleep(0.05)  # Small delay to control loop speed
                 
+        except KeyboardInterrupt:
+            print("Keyboard interrupt - stopping robot")
+            self.running = False
         finally:
-            # Clean up
+
             self.motion.stop()
             self.capture.release()
             cv2.destroyAllWindows()
+            print("Line following robot stopped")
 
-# Main entry point
-if __name__ == "__main__":
-    # Create device configuration
-    devices = DeviceConfiguration()
-    devices.setup()
-    
-    # Create and run the robot
-    robot = LineFollowingRobot(devices)
-    robot.run()
+    def stop(self):
+        self.running = False
+        self.motion.stop()
+        print("Line following robot stopped")
+
+lf = LineFollowingRobot(devices)
+
+button = devices.action_button
+
+def press_handler():
+    print("Button pressed - Starting line follower")
+    lf.run() 
+
+button.when_pressed = press_handler
+
+print("Press the button to start the line follower")
+pause()
