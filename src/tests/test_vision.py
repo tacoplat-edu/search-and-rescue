@@ -18,7 +18,7 @@ class SimpleVisionProcessor:
         height = self.capture.get(cv2.CAP_PROP_FRAME_HEIGHT)
         
         self.reference_locs = self._create_reference_points(width, height)
-        self.PX_TO_CM = 13 / 640
+        self.PX_TO_CM = 13 / 1280
     
     def _create_reference_points(self, width, height):
         print(f"Camera width: {width}, height: {height}")
