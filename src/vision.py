@@ -18,7 +18,7 @@ CORRECTION_SCALE_FACTOR = 0.01
 SHOW_IMAGES = os.environ.get("SHOW_IMAGE_WINDOW") == "true"
 MAX_CORRECITON = 0.09
 MIN_SPEED = 0.30
-MAX_SPEED = 0.48
+MAX_SPEED = 0.44
 
 
 class VisionProcessor:
