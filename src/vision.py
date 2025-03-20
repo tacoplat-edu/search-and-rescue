@@ -273,40 +273,40 @@ class VisionProcessor:
 
                 danger_data = self.get_danger_data(image)
                 
-                if danger_data: 
-                    touches_left = danger_data['touches_left']
-                    touches_right = danger_data['touches_right']
+                # if danger_data: 
+                #     touches_left = danger_data['touches_left']
+                #     touches_right = danger_data['touches_right']
                     
-                    if touches_left or touches_right:
-                        if touches_left and not touches_right:
-                            self.motion.turn(-15, 40)
-                            time.sleep(1.0)
-                            continue
+                #     if touches_left or touches_right:
+                #         if touches_left and not touches_right:
+                #             self.motion.turn(-15, 40)
+                #             time.sleep(1.0)
+                #             continue
                             
-                        elif touches_right and not touches_left:
-                            self.motion.turn(15, 40) 
-                            time.sleep(1.0)  
-                            continue
+                #         elif touches_right and not touches_left:
+                #             self.motion.turn(15, 40) 
+                #             time.sleep(1.0)  
+                #             continue
                             
-                        elif touches_left and touches_right:
-                            self.motion.move(-10, 25)  
-                            time.sleep(1.0)
-                            continue
+                #         elif touches_left and touches_right:
+                #             self.motion.move(-10, 25)  
+                #             time.sleep(1.0)
+                #             continue
                     
-                    # Align with center of the blue target
-                    x_offset = danger_data['x_offset']
-                    if abs(x_offset) > 40:
-                        print(f"Aligning with blue target, offset: {x_offset}px")
+                #     # Align with center of the blue target
+                #     x_offset = danger_data['x_offset']
+                #     if abs(x_offset) > 40:
+                #         print(f"Aligning with blue target, offset: {x_offset}px")
                         
-                        turn_angle = x_offset * 0.1
-                        self.motion.turn(turn_angle, 40)
-                        time.sleep(1.0)
-                        continue
+                #         turn_angle = x_offset * 0.1
+                #         self.motion.turn(turn_angle, 40)
+                #         time.sleep(1.0)
+                #         continue
                     
                     # Target is centered, move forward  
-                    print("Blue target centered - performing pickup")
-                    res = self.motion.move(20, 25)
-                    self.rescue_state.is_figure_held = res
+                    # print("Blue target centered - performing pickup")
+                    # res = self.motion.move(20, 25)
+                    # self.rescue_state.is_figure_held = res
             # Look for green only
             elif (
                 not self.rescue_state.is_rescue_complete
