@@ -23,7 +23,70 @@ class SimpleVisionProcessor:
     def _create_reference_points(self, width, height):
         y_values = [int(height * 0.8), int(height * 0.65), int(height * 0.5)]
         return [(int(width // 2), y) for y in y_values]
+    def get_danger_mask(self, image):
+        """Detect blue objects"""
+        if image is None:
+            return None
         
+        hsv_image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+        
+        blue_lower, blue_upper = np.uint8([100, 100, 30]), np.uint8([140, 255, 255])
+        mask = cv2.inRange(hsv_image, blue_lower, blue_upper)
+        
+        gray_mask = cv2.cvtColor(cv2.bitwise_and(image, image, mask=mask), cv2.COLOR_BGR2GRAY)
+        
+        return gray_mask     
+
+    def get_danger_data(self, image):
+        if image is None:
+            return None, None, None
+        
+        mask = self.get_danger_mask(image)
+        if mask is None or cv2.countNonZero(mask) < 100: 
+            return None, None, None
+        
+        contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        if not contours:
+            return None, None, None
+        
+        blue_contour = max(contours, key=cv2.contourArea)
+        if cv2.contourArea(blue_contour) < 300: 
+            return None, None, None
+        
+        frame_width = image.shape[1]
+        frame_center_x = frame_width // 2
+        
+        border_margin = 5  
+        
+        leftmost = tuple(blue_contour[blue_contour[:, :, 0].argmin()][0])
+        rightmost = tuple(blue_contour[blue_contour[:, :, 0].argmax()][0])
+        
+        touches_left = leftmost[0] <= border_margin
+        touches_right = rightmost[0] >= frame_width - border_margin
+        touches_border = touches_left or touches_right
+        
+        M = cv2.moments(blue_contour)
+        if M["m00"] == 0:
+            return blue_contour, None, None
+        
+        center_x = int(M["m10"] / M["m00"])
+        center_y = int(M["m01"] / M["m00"])
+        center = (center_x, center_y)
+        
+        alignment_data = {
+            'center': center,
+            'leftmost': leftmost,
+            'rightmost': rightmost,
+            'width': rightmost[0] - leftmost[0],
+            'x_offset': center_x - frame_center_x,  
+            'y_position': center_y / image.shape[0],  
+            'area': cv2.contourArea(blue_contour),
+            'touches_left': touches_left,
+            'touches_right': touches_right,
+            'touches_border': touches_border
+        }
+        
+        return blue_contour, center, alignment_data
     def get_path_mask(self, image):
         if image is None:
             return None
