@@ -13,12 +13,12 @@ from helpers.vision import get_dot_locations
 
 FEED_WAIT_DELAY_MS = 1
 FRAME_SAMPLE_DELAY_S = 0.1
-PX_TO_CM = 13 / 1280
+PX_TO_CM = 13 / 640
 CORRECTION_SCALE_FACTOR = 0.01
 SHOW_IMAGES = os.environ.get("SHOW_IMAGE_WINDOW") == "true"
 MAX_CORRECITON = 0.09
-MIN_SPEED = 0.30
-MAX_SPEED = 0.42
+MIN_SPEED = 0.28
+MAX_SPEED = 0.43
 
 
 class VisionProcessor:
@@ -115,26 +115,27 @@ class VisionProcessor:
     """
 
     def get_danger_data(self, image):
+        """Returns blue contour, center, and border data for better alignment"""
         if image is None:
-            return None
+            return None, None, None
         
         danger_mask = self.get_danger_mask(image)
         if danger_mask is None:
-            return None
+            return None, None, None
         
         grayscale = cv2.cvtColor(danger_mask, cv2.COLOR_BGR2GRAY)
         contours, _ = cv2.findContours(grayscale, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         
         if not contours:
-            return None
+            return None, None, None
         
         blue_contour = max(contours, key=cv2.contourArea)
         if cv2.contourArea(blue_contour) < 300:  
-            return None
+            return None, None, None
         
         M = cv2.moments(blue_contour)
         if M["m00"] == 0:
-            return None
+            return blue_contour, None, None
         
         center_x = int(M["m10"] / M["m00"])
         center_y = int(M["m01"] / M["m00"])
@@ -168,71 +169,25 @@ class VisionProcessor:
             return None, None
 
         grayscale = cv2.cvtColor(mask, cv2.COLOR_BGR2GRAY)
-        kernel = np.ones((5,5), np.uint8)
-        cleaned = cv2.morphologyEx(grayscale, cv2.MORPH_CLOSE, kernel)
-        
-        contours, _ = cv2.findContours(cleaned, cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE)
-        
-        if not contours:
-            return None, None
 
-        primary_contour = max(contours, key=cv2.contourArea)
-        height = self.capture.get(cv2.CAP_PROP_FRAME_HEIGHT)
-        width = self.capture.get(cv2.CAP_PROP_FRAME_WIDTH)
-        y_values = []
-        bottom_range = np.linspace(int(height * 0.9), int(height * 0.7), 4) 
-        top_range = np.linspace(int(height * 0.65), int(height * 0.4), 3)    
-        y_values = np.concatenate((bottom_range, top_range))
-        
-        locs = []
-        for abs_y in y_values:
-            abs_y = int(abs_y)
-            tolerance = 3  
-       
-            contour_points = [pt[0] for pt in primary_contour if abs(pt[0][1] - abs_y) <= tolerance]
-            
-            if contour_points:
-                leftmost = min(contour_points, key=lambda pt: pt[0])
-                rightmost = max(contour_points, key=lambda pt: pt[0])
-                abs_x = int((leftmost[0] + rightmost[0]) / 2)
-                locs.append((abs_x, abs_y))
-        
-        if locs:
-            self.reference_locs = [(int(width // 2), loc[1]) for loc in locs]
-        
-        return primary_contour, locs if locs else None 
+        contours, _ = cv2.findContours(grayscale, cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE)
+        if contours:
+            primary_contour = max(contours, key=cv2.contourArea)
 
-    def detect_curve(self, path_locs):
-        if not path_locs or len(path_locs) < 4:
-            return False, 0, "straight"
-            
-        x_coords = [pt[0] for pt in path_locs]
-        
-        center_x = self.capture.get(cv2.CAP_PROP_FRAME_WIDTH) // 2
-        
-        left_count = sum(1 for x in x_coords if x < center_x - 20)
-        right_count = sum(1 for x in x_coords if x > center_x + 20)
-        
-        x_diffs = np.diff(x_coords)
-        
-        is_curve = False
-        curve_direction = "straight"
-        curve_strength = 0
-        
-        if len(x_diffs) >= 3:
-            consistent_right = all(diff > 0 for diff in x_diffs)
-            consistent_left = all(diff < 0 for diff in x_diffs)
-            
-            if consistent_right or right_count > len(x_coords) * 0.6:
-                is_curve = True
-                curve_direction = "right"
-                curve_strength = sum(x_diffs) / len(x_diffs)
-            elif consistent_left or left_count > len(x_coords) * 0.6:
-                is_curve = True
-                curve_direction = "left"
-                curve_strength = -sum(abs(diff) for diff in x_diffs) / len(x_diffs)
-        
-        return is_curve, curve_strength, curve_direction
+            locs = []
+            for i in range(len(self.reference_locs)):
+                abs_y = self.reference_locs[i][1]
+
+                tolerance = 2
+                contour_points = [pt[0] for pt in primary_contour if abs(pt[0][1] - abs_y) <= tolerance]
+                if contour_points:
+                    abs_x = int(np.mean([pt[0] for pt in contour_points]))
+                    locs.append((abs_x, abs_y))
+
+            return primary_contour, locs if locs else None 
+
+        return None, None
+
     def calibrate(self):
         while True:
             _, image = self.capture.read()  # camera frame BGR
@@ -257,35 +212,6 @@ class VisionProcessor:
 
                     return True
 
-
-    def calculate_adaptive_error(self, path_locs):
-        if not path_locs or len(path_locs) < 2:
-            return 0, 0
-        
-        is_curve, curve_strength, curve_direction = self.detect_curve(path_locs)
-        
-        errors = []
-        for i, (path_loc, ref_loc) in enumerate(zip(path_locs, self.reference_locs[:len(path_locs)])):
-            error = (path_loc[0] - ref_loc[0]) * PX_TO_CM
-            errors.append(error)
-        
-        #top_error = errors[-1]
-        
-        if is_curve:
-            if curve_direction == "left":
-                weights = np.linspace(0.4, 1.0, len(errors))
-            else: 
-                weights = np.linspace(0.4, 1.0, len(errors))
-                
-            weighted_error = sum(error * weight for error, weight in zip(errors, weights)) / sum(weights)
-        else:
-            if len(errors) >= 3:
-                weights = [0.6, 1.0, 0.8] + [0.7] * (len(errors) - 3)
-                weighted_error = sum(error * weight for error, weight in zip(errors, weights)) / sum(weights)
-            else:
-                weighted_error = sum(errors) / len(errors)
-        
-        return weighted_error, is_curve, curve_direction, curve_strength
     def run(self):
         # Restart the stream if not already opened
         if not self.running:
@@ -399,92 +325,72 @@ class VisionProcessor:
             # Always look for red if not for the other two colours
             if path is not None and path_locs is not None:
                 if len(path_locs) >= 1:
-                     weighted_error, is_curve, curve_direction, curve_strength = self.calculate_adaptive_error(path_locs)
-        
-                print(f"Path: {'CURVE '+curve_direction if is_curve else 'STRAIGHT'}, " +
-                    f"Strength: {curve_strength:.1f}, Error: {weighted_error:.2f}cm")
-                
-                correction = self.p_controller.compute_correction(weighted_error)
-            
+                    top_index = len(path_locs) - 1 
+                    error = (path_locs[top_index][0] - self.reference_locs[top_index][0]) * PX_TO_CM
+                    self.blind_frames = 0 
 
-                if is_curve:
-                    curve_boost = min(0.04, abs(curve_strength) * 0.001)
-                    
-                    if curve_direction == "left":
-                        correction -= curve_boost
-                    else: 
-                        correction += curve_boost
-                        
-                    if abs(weighted_error) > 3.0:
-                        correction *= 1.2
-                
-                self.last_error = weighted_error
+                print("error", error)
+
+                correction = self.p_controller.compute_correction(error)
+
+                self.last_error = error
                 self.last_correction = correction
-                self.blind_frames = 0
 
-                if abs(weighted_error) > 1.0 and abs(correction) < 0.05:
-                    correction = 0.05 * (-1 if weighted_error < 0 else 1)
+                if abs(error) > 1.0 and abs(correction) < 0.05:
+                    correction = 0.05 * (-1 if error < 0 else 1)
 
                 correction = max(-MAX_CORRECITON, min(MAX_CORRECITON, correction))
+
                 default_speed = self.motion.default_speed
-        
-                if is_curve:
-                        curve_speed_factor = 0.9
-                        adjusted_default = default_speed * curve_speed_factor
-                        
-                        if curve_direction == "left":
-                            left_speed = max(MIN_SPEED, adjusted_default - abs(correction) * 1.2)
-                            right_speed = adjusted_default
-                        else: 
-                            left_speed = adjusted_default
-                            right_speed = max(MIN_SPEED, adjusted_default - abs(correction) * 1.2)
-                else:
-                    if abs(correction) == MAX_CORRECITON:
-                        left_speed = max(MIN_SPEED, min(MAX_SPEED, default_speed + correction))
-                        right_speed = max(MIN_SPEED, min(MAX_SPEED, default_speed - correction))
-                    else:
-                        if correction > 0:  
-                            left_speed = min(MAX_SPEED, default_speed + correction)
-                            right_speed = max(MIN_SPEED, default_speed)
-                        else: 
-                            left_speed = max(MIN_SPEED, default_speed)
-                            right_speed = min(MAX_SPEED, default_speed - correction)
+
+                # # Try only adjusting one motor for p-control at a time when correction is large
+                # if abs(correction) == MAX_CORRECITON:
+                left_speed = max(MIN_SPEED, min(MAX_SPEED, default_speed + correction))
+                right_speed = max(MIN_SPEED, min(MAX_SPEED, default_speed - correction))
+                # else:
+                #     if correction > 0:  
+                #         left_speed = min(MAX_SPEED, default_speed + correction)
+                #         right_speed = max(MIN_SPEED, default_speed )
+                #     else: 
+                #         left_speed = max(MIN_SPEED, default_speed)
+                #         right_speed = min(MAX_SPEED, default_speed - correction)
+    
 
                 print(f"Setting speeds: L={left_speed:.2f}, R={right_speed:.2f}")
+
                 self.motion.set_forward_speed(left_speed, Wheel.LEFT)
                 self.motion.set_forward_speed(right_speed, Wheel.RIGHT)
 
             else:
                 # Need to run recalibration algorithm
-                # self.blind_frames += 1
-                # if self.blind_frames < self.max_blind_recovery:
-                #     print(f"Cant see line, last error is {self.last_error}")
+                self.blind_frames += 1
+                if self.blind_frames < self.max_blind_recovery:
+                    print(f"Cant see line, last error is {self.last_error}")
 
-                #     default_speed = self.motion.default_speed
+                    default_speed = self.motion.default_speed
 
-                #     if self.last_error < 0:
-                #         left_speed = MIN_SPEED
-                #         right_speed = min(MAX_SPEED, default_speed - self.last_correction)
-                #         print("Last seen line on left, moving right wheel")
-                #     else:
-                #         left_speed = min(MAX_SPEED, default_speed + self.last_correction)
-                #         right_speed = MIN_SPEED 
-                #         print("Last seen line on right, moving left wheel")
+                    if self.last_error < 0:
+                        left_speed = MIN_SPEED
+                        right_speed = min(MAX_SPEED, default_speed - self.last_correction)
+                        print("Last seen line on left, moving right wheel")
+                    else:
+                        left_speed = min(MAX_SPEED, default_speed + self.last_correction)
+                        right_speed = MIN_SPEED 
+                        print("Last seen line on right, moving left wheel")
                     
-                #     print(f"Recovery speeds: L={left_speed:.2f}, R={right_speed:.2f}")
+                    print(f"Recovery speeds: L={left_speed:.2f}, R={right_speed:.2f}")
                     
-                #     self.motion.set_forward_speed(left_speed, Wheel.LEFT)
-                #     self.motion.set_forward_speed(right_speed, Wheel.RIGHT)
+                    self.motion.set_forward_speed(left_speed, Wheel.LEFT)
+                    self.motion.set_forward_speed(right_speed, Wheel.RIGHT)
                     
-                # else:
-                #     print("Spinning to find line")
-                #     if self.last_error < 0:
-                #         self.motion.set_reverse_speed(0.40, Wheel.LEFT)
-                #         self.motion.set_forward_speed(0.40, Wheel.RIGHT)
-                #     else:
-                #         self.motion.set_forward_speed(0.40, Wheel.LEFT)
-                #         self.motion.set_reverse_speed(0.40, Wheel.RIGHT)
-                pass
+                else:
+                    print("Spinning to find line")
+                    if self.last_error < 0:
+                        self.motion.set_reverse_speed(0.40, Wheel.LEFT)
+                        self.motion.set_forward_speed(0.40, Wheel.RIGHT)
+                    else:
+                        self.motion.set_forward_speed(0.40, Wheel.LEFT)
+                        self.motion.set_reverse_speed(0.40, Wheel.RIGHT)
 
             if cv2.waitKey(FEED_WAIT_DELAY_MS) & 0xFF == ord("q"):
                 break
