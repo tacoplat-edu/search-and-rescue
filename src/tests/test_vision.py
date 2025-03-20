@@ -21,8 +21,17 @@ class SimpleVisionProcessor:
         self.PX_TO_CM = 13 / 640
     
     def _create_reference_points(self, width, height):
+        print(f"Camera width: {width}, height: {height}")
+        
+        center_x = int(width // 2)
+        
         y_values = [int(height * 0.8), int(height * 0.65), int(height * 0.5)]
-        return [(int(width // 2), y) for y in y_values]
+        
+        reference_points = [(center_x, y) for y in y_values]
+        
+        print(f"Reference points calculated at: {reference_points}")
+        
+        return reference_points
     def get_danger_mask(self, image):
         """Detect blue objects"""
         if image is None:
