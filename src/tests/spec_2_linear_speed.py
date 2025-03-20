@@ -1,10 +1,14 @@
 import time
+import os
+import sys
+# Set up the path to include the src directory for all imports
+root_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+src_dir = os.path.join(root_dir, "src")
+sys.path.insert(0, src_dir)  # Add src directory to path
 
-from ..motion import MotionController
-from ..motion import MAX_SPEED
-
-from ..models.devices import devices
-
+# Now import using absolute paths within the src directory
+from motion import MotionController, MAX_SPEED
+from models.devices import devices
 motion = MotionController(devices)
 
 ITERATION_LIMIT = 100000
