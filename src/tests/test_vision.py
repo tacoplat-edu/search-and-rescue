@@ -1,7 +1,8 @@
 import cv2
 import time
 import numpy as np
-from p_control import PController 
+from ..p_control import PController 
+
 class SimpleVisionProcessor:
     def __init__(self, config_params=None):
         self.capture = cv2.VideoCapture(0)
