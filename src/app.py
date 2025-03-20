@@ -18,8 +18,8 @@ motion = MotionController(devices)
 vp = VisionProcessor(
     motion,
     {
-        cv2.CAP_PROP_FRAME_WIDTH: 640,
-        cv2.CAP_PROP_FRAME_HEIGHT: 480,
+        cv2.CAP_PROP_FRAME_WIDTH: 1280,
+        cv2.CAP_PROP_FRAME_HEIGHT: 720,
     },
 )
 

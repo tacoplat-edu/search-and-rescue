@@ -13,7 +13,7 @@ from helpers.vision import get_dot_locations
 
 FEED_WAIT_DELAY_MS = 1
 FRAME_SAMPLE_DELAY_S = 0.1
-PX_TO_CM = 13 / 640
+PX_TO_CM = 13 / 1280
 CORRECTION_SCALE_FACTOR = 0.01
 SHOW_IMAGES = os.environ.get("SHOW_IMAGE_WINDOW") == "true"
 MAX_CORRECITON = 0.09
