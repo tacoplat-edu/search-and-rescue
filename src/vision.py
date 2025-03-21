@@ -19,7 +19,7 @@ SHOW_IMAGES = os.environ.get("SHOW_IMAGE_WINDOW") == "true"
 MAX_CORRECITON = 0.1
 MIN_SPEED = 0.10
 MAX_SPEED = 0.35
-TURN_SPEED = 0.65
+TURN_SPEED = 0.50
 
 class VisionProcessor:
     running: bool
