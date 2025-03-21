@@ -6,6 +6,7 @@ import cv2
 import numpy as np
 
 from motion import MotionController
+from servo import ServoController
 from models.rescue import RescueState
 from p_control import PController
 from models.wheel import Wheel
@@ -26,6 +27,7 @@ class VisionProcessor:
     capture: cv2.VideoCapture
     capture_config: dict[int, float]
     motion: MotionController
+    servo: ServoController
     rescue_state: RescueState
     reference_locs: list[int]
     p_controller: PController
@@ -33,20 +35,24 @@ class VisionProcessor:
     def __init__(
         self,
         motion: MotionController,
+        servo: ServoController,
         config_params: dict[int, float],
     ) -> None:
         self.running = False
         self.capture = cv2.VideoCapture(0)
-        self.rescue_state = RescueState()
-        self.p_controller = PController(kp=0.75, scale_factor=CORRECTION_SCALE_FACTOR)
-        self.motion = motion
-        self.capture_config = config_params
 
+        self.rescue_state = RescueState()
+
+        self.p_controller = PController(kp=0.75, scale_factor=CORRECTION_SCALE_FACTOR)
         self.last_error = 0
         self.last_correction = 0
         self.blind_frames = 0
         self.max_blind_recovery = 20
 
+        self.motion = motion
+        self.servo = servo
+
+        self.capture_config = config_params
         for k, v in self.capture_config.items():
             self.capture.set(k, v)
 
@@ -153,6 +159,7 @@ class VisionProcessor:
         
         alignment_data = {
             'center': center,
+            'area': cv2.contourArea(blue_contour),
             'leftmost': leftmost,
             'rightmost': rightmost,
             'width': rightmost[0] - leftmost[0],
@@ -211,6 +218,31 @@ class VisionProcessor:
                     self.motion.turn(theta)
 
                     return True
+    
+    def perform_rescue(self):
+        while True:
+            _, image = self.capture.read()
+
+            danger_data = self.get_danger_data(image)
+            
+            if danger_data:
+                x_offset = danger_data["x_offset"]
+                
+                if abs(x_offset) < 200:
+                    self.motion.stop()
+
+                    if danger_data["area"] > 1000:
+                        self.servo.grip()
+                        time.sleep(1)
+                        return True
+                    else:
+                        self.motion.move(1, 2)
+                else:
+                    if x_offset > 0:
+                        self.motion.turn(3, 45)
+                    else:
+                        self.motion.turn(-3, 45)
+
 
     def run(self):
         # Restart the stream if not already opened
@@ -269,44 +301,14 @@ class VisionProcessor:
                 if danger is not None:
                     print("blue detected")
                     self.motion.stop()
-                    time.sleep(2.5)
-
-                danger_data = self.get_danger_data(image)
+                    time.sleep(2)
                 
-                # if danger_data: 
-                #     touches_left = danger_data['touches_left']
-                #     touches_right = danger_data['touches_right']
-                    
-                #     if touches_left or touches_right:
-                #         if touches_left and not touches_right:
-                #             self.motion.turn(-15, 40)
-                #             time.sleep(1.0)
-                #             continue
-                            
-                #         elif touches_right and not touches_left:
-                #             self.motion.turn(15, 40) 
-                #             time.sleep(1.0)  
-                #             continue
-                            
-                #         elif touches_left and touches_right:
-                #             self.motion.move(-10, 25)  
-                #             time.sleep(1.0)
-                #             continue
-                    
-                #     # Align with center of the blue target
-                #     x_offset = danger_data['x_offset']
-                #     if abs(x_offset) > 40:
-                #         print(f"Aligning with blue target, offset: {x_offset}px")
-                        
-                #         turn_angle = x_offset * 0.1
-                #         self.motion.turn(turn_angle, 40)
-                #         time.sleep(1.0)
-                #         continue
-                    
-                    # Target is centered, move forward  
-                    # print("Blue target centered - performing pickup")
-                    # res = self.motion.move(20, 25)
-                    # self.rescue_state.is_figure_held = res
+                res = self.perform_rescue()
+
+                if res:
+                    self.rescue_state.is_figure_held = True
+                    self.motion.turn(180, 180)
+                
             # Look for green only
             elif (
                 not self.rescue_state.is_rescue_complete
@@ -315,11 +317,6 @@ class VisionProcessor:
                 if safe is not None:
                     print("green detected")
                     self.motion.stop()
-                    time.sleep(2.5)
-                    self.motion.move(-45, 6)
-                    self.rescue_state.is_rescue_complete = True
-
-                    time.sleep(2)
                     break
 
             # Always look for red if not for the other two colours
@@ -336,12 +333,9 @@ class VisionProcessor:
                 self.last_error = error
                 self.last_correction = correction
 
-                #correction = max(-MAX_CORRECITON, min(MAX_CORRECITON, correction))
-
                 default_speed = self.motion.default_speed
 
                 # # Try only adjusting one motor for p-control at a time when correction is large
-                # if abs(correction) == MAX_CORRECITON:
                 # When turning right (negative error/correction):
                 if correction < 0:
                     left_speed = max(MIN_SPEED, default_speed + correction)  
@@ -349,13 +343,6 @@ class VisionProcessor:
                 else:
                     left_speed = min(MAX_SPEED, default_speed + correction)  
                     right_speed = max(MIN_SPEED, default_speed - correction)  
-                    # else:
-                    #     if correction > 0:  
-                    #         left_speed = min(MAX_SPEED, default_speed + correction)
-                    #         right_speed = max(MIN_SPEED, default_speed )
-                    #     else: 
-                    #         left_speed = max(MIN_SPEED, default_speed)
-                    #         right_speed = min(MAX_SPEED, default_speed - correction)
         
 
                     print(f"Setting speeds: L={left_speed:.2f}, R={right_speed:.2f}")
