@@ -17,9 +17,9 @@ PX_TO_CM = 13 / 640
 CORRECTION_SCALE_FACTOR = 0.01
 SHOW_IMAGES = os.environ.get("SHOW_IMAGE_WINDOW") == "true"
 MAX_CORRECITON = 0.1
-MIN_SPEED = 0.05
-MAX_SPEED = 0.45
-TURN_SPEED = 0.45
+MIN_SPEED = 0.15
+MAX_SPEED = 0.55
+TURN_SPEED = 0.55
 
 class VisionProcessor:
     running: bool
