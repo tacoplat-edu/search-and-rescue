@@ -19,7 +19,7 @@ SHOW_IMAGES = os.environ.get("SHOW_IMAGE_WINDOW") == "true"
 MAX_CORRECITON = 0.1
 MIN_SPEED = 0.05
 MAX_SPEED = 0.45
-
+TURN_SPEED = 0.45
 
 class VisionProcessor:
     running: bool
@@ -388,11 +388,11 @@ class VisionProcessor:
                 else:
                     print("Spinning to find line")
                     if self.last_error < 0:
-                        self.motion.set_reverse_speed(0.4, Wheel.LEFT)
-                        self.motion.set_forward_speed(0.4, Wheel.RIGHT)
+                        self.motion.set_reverse_speed(TURN_SPEED, Wheel.LEFT)
+                        self.motion.set_forward_speed(TURN_SPEED, Wheel.RIGHT)
                     else:
-                        self.motion.set_forward_speed(0.4, Wheel.LEFT)
-                        self.motion.set_reverse_speed(0.4, Wheel.RIGHT)
+                        self.motion.set_forward_speed(TURN_SPEED, Wheel.LEFT)
+                        self.motion.set_reverse_speed(TURN_SPEED, Wheel.RIGHT)
 
             if cv2.waitKey(FEED_WAIT_DELAY_MS) & 0xFF == ord("q"):
                 break
