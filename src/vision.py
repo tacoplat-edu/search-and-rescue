@@ -418,7 +418,6 @@ class VisionProcessor:
 
             danger = self.detect_special_contours(danger_mask, 153600)
             safe = self.detect_special_contours(safe_mask, 153600)
-
             # Draw contours onto the frame
           
             # Draw visualization if showing images
@@ -453,7 +452,35 @@ class VisionProcessor:
                 # Draw safe (green) contour
                 if safe is not None:
                     cv2.drawContours(display, [safe], -1, (0, 255, 0), 2)
-           
+               
+                # Add tuning parameter display at the bottom of screen
+                param_y = height - 120
+                cv2.putText(display, f"PID: kp={self.pid_controller.kp:.2f}, ki={self.pid_controller.ki:.2f}, kd={self.pid_controller.kd:.2f}", 
+                            (20, param_y), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
+                cv2.putText(display, f"Scale: {self.pid_controller.scale_factor:.4f}", 
+                            (400, param_y), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
+                
+                # Show lookahead weights
+                weight_text = "Weights: " + ", ".join([f"{w:.2f}" for w in self.lookahead_weights])
+                cv2.putText(display, weight_text, (20, param_y + 30), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
+                
+                # Add bird's eye view calibration visualization
+                if birds_eye_display is not None:
+                    # Draw horizontal lines at each lookahead row
+                    for row in self.lookahead_rows:
+                        cv2.line(birds_eye_display, (0, row), (width, row), (0, 255, 0), 1)
+                    
+                    # Draw vertical center line
+                    cv2.line(birds_eye_display, (center_x, 0), (center_x, height), (0, 255, 0), 1)
+                    
+                    # Show the source points of perspective transform on original image
+                    for point in self.src_points:
+                        cv2.circle(display, (int(point[0]), int(point[1])), 4, (0, 165, 255), -1)
+                        
+                    # Outline the region being transformed to bird's eye view
+                    src_points_int = np.array(self.src_points, dtype=np.int32)
+                    cv2.polylines(display, [src_points_int], True, (0, 165, 255), 2)
+        
             # Initialize motor control variables
             default_speed = self.motion.default_speed
             left_speed = default_speed
@@ -618,6 +645,13 @@ class VisionProcessor:
                 #         self.motion.set_forward_speed(TURN_SPEED, Wheel.LEFT)
                 #         self.motion.set_reverse_speed(TURN_SPEED, Wheel.RIGHT)
                 pass
+
+            # Display images if enabled
+            if SHOW_IMAGES:
+                cv2.imshow("Image", display)
+                if birds_eye_display is not None:
+                    cv2.imshow("Bird's Eye View", birds_eye_display)
+        
             if cv2.waitKey(FEED_WAIT_DELAY_MS) & 0xFF == ord("q"):
                 break
 
