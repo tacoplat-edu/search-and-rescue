@@ -344,10 +344,6 @@ class EnhancedVisionProcessor:
                     if weighted_error is not None:
                         correction = self.pid_controller.compute_correction(weighted_error)
                         
-                        # Ensure minimum correction if error is significant
-                        if abs(weighted_error) > 1.0 and abs(correction) < 0.05:
-                            correction = 0.05 * (-1 if weighted_error < 0 else 1)
-                        
                         # Apply correction to motor speeds
                         left_speed = DEFAULT_SPEED + correction
                         right_speed = DEFAULT_SPEED - correction
