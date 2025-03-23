@@ -9,3 +9,6 @@ install:
 
 save-deps:
 	pip freeze > requirements.txt
+
+run-test_vision:
+	python -m src.tests.test_vision
