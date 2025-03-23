@@ -7,7 +7,7 @@ import numpy as np
 
 from motion import MotionController
 from models.rescue import RescueState
-from p_control import PController
+from pid_control import PIDController
 from models.wheel import Wheel
 from helpers.vision import get_dot_locations
 
@@ -16,10 +16,9 @@ FRAME_SAMPLE_DELAY_S = 0.1
 PX_TO_CM = 13 / 640
 CORRECTION_SCALE_FACTOR = 0.01
 SHOW_IMAGES = os.environ.get("SHOW_IMAGE_WINDOW") == "true"
-MAX_CORRECITON = 0.1
-MIN_SPEED = 0.05
-MAX_SPEED = 0.35
-TURN_SPEED = 0.40
+#MIN_SPEED = 0.05
+#MAX_SPEED = 0.35
+#TURN_SPEED = 0.40
 
 class VisionProcessor:
     running: bool
@@ -28,7 +27,7 @@ class VisionProcessor:
     motion: MotionController
     rescue_state: RescueState
     reference_locs: list[int]
-    p_controller: PController
+    pid_controller: PIDController
 
     def __init__(
         self,
@@ -36,11 +35,24 @@ class VisionProcessor:
         config_params: dict[int, float],
     ) -> None:
         self.running = False
-        self.capture = cv2.VideoCapture(0)
+        self.capture = cv2.VideoCapture(0, cv2.CAP_V4L2) # use v4l2 video capture for rpi
         self.rescue_state = RescueState()
-        self.p_controller = PController(kp=0.75, scale_factor=CORRECTION_SCALE_FACTOR)
+        self.pid_controller = PIDController(kp=0.75, ki=0.5, kd= 0.5, scale_factor=CORRECTION_SCALE_FACTOR)
         self.motion = motion
         self.capture_config = config_params
+
+
+        # tune these for adjusting turn timing
+        self.lookahead_rows = [
+            int(height * 0.85),  # Near
+            int(height * 0.7),   # Mid
+            int(height * 0.55),  # Far
+            int(height * 0.4)    # Very far - new addition
+        ]
+
+        # Adjust weights to include the new point
+        self.lookahead_weights = [0.4, 0.25, 0.2, 0.15]
+
 
         self.last_error = 0
         self.last_correction = 0
