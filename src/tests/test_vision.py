@@ -160,8 +160,8 @@ class EnhancedVisionProcessor:
             
         hsv_image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
         
-        red1_lower, red1_upper = np.uint8([0, 100, 30]), np.uint8([10, 255, 255])
-        red2_lower, red2_upper = np.uint8([160, 100, 30]), np.uint8([180, 255, 255])
+        red1_lower, red1_upper = np.uint8([0, 70, 20]), np.uint8([15, 255, 255])
+        red2_lower, red2_upper = np.uint8([155, 70, 20]), np.uint8([180, 255, 255])
         
         mask1 = cv2.inRange(hsv_image, red1_lower, red1_upper)
         mask2 = cv2.inRange(hsv_image, red2_lower, red2_upper)
@@ -169,10 +169,12 @@ class EnhancedVisionProcessor:
         mask = cv2.bitwise_or(mask1, mask2)
         
         # Apply morphological operations to clean up the mask
-        kernel = np.ones((5, 5), np.uint8)
-        mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
-        mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
-        
+        kernel_close = np.ones((7, 7), np.uint8) 
+        kernel_open = np.ones((3, 3), np.uint8) 
+        mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel_close)
+        mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel_open)
+    
+        mask = cv2.dilate(mask, kernel_open, iterations=1)
         return mask, cv2.bitwise_and(image, image, mask=mask)
     
     def get_path_points_with_lookahead(self, binary_mask):
