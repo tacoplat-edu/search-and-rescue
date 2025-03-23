@@ -220,12 +220,12 @@ class EnhancedVisionProcessor:
     def calculate_weighted_error(self, path_points):
         """Calculate weighted error based on multiple look-ahead points"""
         if not path_points or all(pt is None for pt in path_points):
-            return None, None, []
+            return None, None, None, []
         
         # Filter out None points
         valid_points = [(i, pt) for i, pt in enumerate(path_points) if pt is not None]
         if not valid_points:
-            return None, None, []
+            return None, None, None, []
         
         # Calculate errors for each valid point
         errors = []
@@ -237,17 +237,30 @@ class EnhancedVisionProcessor:
         # If we don't have all points, adjust weights
         if len(errors) < len(self.lookahead_weights):
             # Create new weights normalized to sum to 1
-            adjusted_weights = [self.lookahead_weights[i] for i, _ in errors]
-            total = sum(adjusted_weights)
-            if total > 0:
-                adjusted_weights = [w / total for w in adjusted_weights]
+            # The key fix - create a mapping from original indices to new weights
+            adjusted_weights = {}
+            total_weight = 0
+            
+            # Only include weights for indices we have
+            for i, _ in errors:
+                if i < len(self.lookahead_weights):
+                    adjusted_weights[i] = self.lookahead_weights[i]
+                    total_weight += self.lookahead_weights[i]
+            
+            # Normalize weights
+            if total_weight > 0:
+                for i in adjusted_weights:
+                    adjusted_weights[i] = adjusted_weights[i] / total_weight
             else:
                 # Equal weights if we can't normalize
-                adjusted_weights = [1.0 / len(errors)] * len(errors)
+                even_weight = 1.0 / len(errors)
+                for i, _ in errors:
+                    adjusted_weights[i] = even_weight
         else:
-            adjusted_weights = self.lookahead_weights
+            # Use the original weights as a dictionary
+            adjusted_weights = {i: self.lookahead_weights[i] for i in range(len(self.lookahead_weights))}
         
-        # Calculate weighted error
+        # Calculate weighted error using the dictionary
         weighted_sum = sum(error * adjusted_weights[i] for i, error in errors)
         
         # Return near and far errors for display, plus all errors
