@@ -34,7 +34,7 @@ class EnhancedVisionProcessor:
         
         # Create reference points at center of each row
         self.reference_locs = self._create_reference_points(width, height)
-        self.PX_TO_CM = 13 / 640
+        self.PX_TO_CM = 13 / 1280
         
         # Weights for look-ahead points (adjust these based on testing)
         self.lookahead_weights = [0.6, 0.3, 0.1]  # Near, mid, far
