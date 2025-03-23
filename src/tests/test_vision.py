@@ -8,8 +8,8 @@ class EnhancedVisionProcessor:
         self.capture = cv2.VideoCapture(0, cv2.CAP_V4L2)
         
         self.config_params = config_params or {
-            cv2.CAP_PROP_FRAME_WIDTH: 640,
-            cv2.CAP_PROP_FRAME_HEIGHT: 480,
+            cv2.CAP_PROP_FRAME_WIDTH: 1280,
+            cv2.CAP_PROP_FRAME_HEIGHT: 720,
         }
         self.default_motor_speed = 0.3
 
