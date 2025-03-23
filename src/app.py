@@ -3,6 +3,7 @@ import os
 from signal import pause
 
 os.environ["OPENCV_VIDEOIO_MSMF_ENABLE_HW_TRANSFORMS"] = "0"
+os.environ["SHOW_IMAGE_WINDOW"] = "true"
 import cv2
 from dotenv import load_dotenv
 load_dotenv()
@@ -27,7 +28,7 @@ button = devices.action_button
 def press_handler():
    print("what the sigma")
    vp.run()
-   vp.running = False
+   #vp.running = False
 button.when_pressed = press_handler
 
 #vp.run()
