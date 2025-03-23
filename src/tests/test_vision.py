@@ -8,8 +8,8 @@ class EnhancedVisionProcessor:
         self.capture = cv2.VideoCapture(0, cv2.CAP_V4L2)
         
         self.config_params = config_params or {
-            cv2.CAP_PROP_FRAME_WIDTH: 1280,
-            cv2.CAP_PROP_FRAME_HEIGHT: 720,
+            cv2.CAP_PROP_FRAME_WIDTH: 640,
+            cv2.CAP_PROP_FRAME_HEIGHT: 480,
         }
         self.default_motor_speed = 0.3
 
@@ -34,7 +34,7 @@ class EnhancedVisionProcessor:
         
         # Create reference points at center of each row
         self.reference_locs = self._create_reference_points(width, height)
-        self.PX_TO_CM = 13 / 1280
+        self.PX_TO_CM = 13 / 640
         
         # Weights for look-ahead points (adjust these based on testing)
         self.lookahead_weights = [0.6, 0.3, 0.1]  # Near, mid, far
