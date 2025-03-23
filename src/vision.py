@@ -65,10 +65,10 @@ class VisionProcessor:
 
         # Bird's eye view perspective transform
         self.setup_perspective_transform(width, height)
-
-        y_locs = get_dot_locations(self.capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
-        self.reference_locs = [(int(width // 2), y_loc) for y_loc in y_locs]
-
+        self.warped_width = 640
+        self.warped_height = 480
+        self.reference_locs = self._create_reference_points(width, height)
+        
     def setup_perspective_transform(self, width, height):
         """Set up the perspective transform for bird's eye view"""
         # Source points in the original image (adjust these based on your camera setup)
@@ -388,6 +388,7 @@ class VisionProcessor:
             for k, v in self.capture_config.items():
                 self.capture.set(k, v)
             self.rescue_state = RescueState()
+            self.pid_controller.reset()
         
         if SHOW_IMAGES:
             cv2.namedWindow("Image", cv2.WINDOW_NORMAL)
@@ -534,15 +535,7 @@ class VisionProcessor:
                 near_error, far_error, weighted_error, all_errors = self.calculate_weighted_error(path_points)
                 
                 if weighted_error is not None:
-                    # Get base correction from PID controller
-                    base_correction = self.pid_controller.compute_correction(weighted_error)
-                    
-                    # For sharp turns, enhance correction based on error magnitude
-                    if abs(weighted_error) > 3.0:  # Significant deviation
-                        correction_factor = min(1.0 + (abs(weighted_error) - 3.0) * 0.2, 3.0)
-                        correction = base_correction * correction_factor
-                    else:
-                        correction = base_correction
+                    correction = self.pid_controller.compute_correction(weighted_error)
                     
                     # Apply correction to motor speeds
                     left_speed = default_speed + correction
