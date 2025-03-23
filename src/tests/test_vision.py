@@ -281,9 +281,6 @@ class EnhancedVisionProcessor:
         self.pid_controller.reset()  # Reset PID state before starting
         
         DEFAULT_SPEED = 0.3
-        MIN_SPEED = 0.1
-        MAX_SPEED = 0.45
-        MAX_CORRECTION = 0.15
         
         try:
             while True:
@@ -351,12 +348,9 @@ class EnhancedVisionProcessor:
                         if abs(weighted_error) > 1.0 and abs(correction) < 0.05:
                             correction = 0.05 * (-1 if weighted_error < 0 else 1)
                         
-                        # Limit maximum correction
-                        correction = max(-MAX_CORRECTION, min(MAX_CORRECTION, correction))
-                        
                         # Apply correction to motor speeds
-                        left_speed = max(MIN_SPEED, min(MAX_SPEED, DEFAULT_SPEED + correction))
-                        right_speed = max(MIN_SPEED, min(MAX_SPEED, DEFAULT_SPEED - correction))
+                        left_speed = DEFAULT_SPEED + correction
+                        right_speed = DEFAULT_SPEED - correction
                         
                         # Determine direction of turn
                         direction = "RIGHT" if weighted_error > 0 else "LEFT" if weighted_error < 0 else "CENTER"
@@ -445,8 +439,8 @@ class EnhancedVisionProcessor:
                 bar_height = 30
                 max_bar_width = 200
                 
-                left_bar_width = int(max_bar_width * (left_speed / MAX_SPEED))
-                right_bar_width = int(max_bar_width * (right_speed / MAX_SPEED))
+                left_bar_width = int(max_bar_width * (left_speed / 1))
+                right_bar_width = int(max_bar_width * (right_speed / 1))
                 
                 cv2.rectangle(display, (bar_x, bar_y), (bar_x + left_bar_width, bar_y + bar_height), (255, 165, 0), -1)
                 cv2.rectangle(display, (bar_x, bar_y), (bar_x + max_bar_width, bar_y + bar_height), (255, 255, 255), 2)
