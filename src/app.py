@@ -55,7 +55,7 @@
 from gpiozero import Servo
 from time import sleep
 
-servo = Servo(13)  # GPIO pin number (BCM numbering)
+servo = Servo(13,frame_width=0.02)  # GPIO pin number (BCM numbering)
 
 try:
     while True:
