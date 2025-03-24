@@ -37,7 +37,7 @@ class VisionProcessor:
         self.running = False
         self.capture = cv2.VideoCapture(0, cv2.CAP_V4L2) # use v4l2 video capture for rpi
         self.rescue_state = RescueState()
-        self.pid_controller = PIDController(kp=3, ki=0.01, kd= 0.2, scale_factor=CORRECTION_SCALE_FACTOR)
+        self.pid_controller = PIDController(kp=3.5, ki=0.01, kd= 0.2, scale_factor=CORRECTION_SCALE_FACTOR)
         self.motion = motion
         self.capture_config = config_params
 
