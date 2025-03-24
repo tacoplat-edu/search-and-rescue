@@ -6,6 +6,7 @@ import cv2
 import numpy as np
 
 from motion import MotionController
+from servo import ServoController
 from models.rescue import RescueState
 from pid_control import PIDController
 from models.wheel import Wheel
@@ -25,6 +26,7 @@ class VisionProcessor:
     capture: cv2.VideoCapture
     capture_config: dict[int, float]
     motion: MotionController
+    servo: ServoController
     rescue_state: RescueState
     reference_locs: list[int]
     pid_controller: PIDController
@@ -32,6 +34,7 @@ class VisionProcessor:
     def __init__(
         self,
         motion: MotionController,
+        servo: ServoController,
         config_params: dict[int, float],
     ) -> None:
         self.running = False
@@ -39,6 +42,7 @@ class VisionProcessor:
         self.rescue_state = RescueState()
         self.pid_controller = PIDController(kp=2.5, ki=0.02, kd= 0.3, scale_factor=CORRECTION_SCALE_FACTOR)
         self.motion = motion
+        self.servo = servo
         self.capture_config = config_params
 
         self.last_error = 0
@@ -226,6 +230,7 @@ class VisionProcessor:
         alignment_data = {
             'contour': blue_contour, 
             'center': center,
+            'area': cv2.contourArea(blue_contour),
             'leftmost': leftmost,
             'rightmost': rightmost,
             'width': rightmost[0] - leftmost[0],
@@ -279,6 +284,30 @@ class VisionProcessor:
                 path_points.append(None)
         
         return primary_contour, path_points
+    
+    def perform_rescue(self):
+            while True:
+                _, image = self.capture.read()
+
+                danger_data = self.get_danger_data(image)
+                
+                if danger_data:
+                    x_offset = danger_data["x_offset"]
+                    
+                    if abs(x_offset) < 200:
+                        self.motion.stop()
+
+                        if danger_data["area"] > 1000:
+                            self.servo.grip()
+                            time.sleep(1)
+                            return True
+                        else:
+                            self.motion.move(1, 2)
+                    else:
+                        if x_offset > 0:
+                            self.motion.turn(3, 45)
+                        else:
+                            self.motion.turn(-3, 45)
     
     def calculate_weighted_error(self, path_points):
         """Calculate weighted error based on multiple look-ahead points"""
@@ -503,9 +532,13 @@ class VisionProcessor:
                 if danger is not None:
                     print("blue detected")
                     self.motion.stop()
-                    time.sleep(2.5)
+                    time.sleep(2)
+                
+                res = self.perform_rescue()
 
-                pass
+                if res:
+                    self.rescue_state.is_figure_held = True
+                    self.motion.turn(180, 180)
                 
                 # if danger_data: 
                 #     touches_left = danger_data['touches_left']
