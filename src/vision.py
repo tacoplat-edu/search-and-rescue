@@ -287,34 +287,29 @@ class VisionProcessor:
         
         return primary_contour, path_points
     
-    def perform_rescue(self):
-        while True:
+    def perform_rescue(self,danger_data=None):
+        if danger_data is None:
             _, image = self.capture.read()
-
             danger_data = self.get_danger_data(image)
             
-            if danger_data:
-                x_offset = danger_data["x_offset"]
-                
-                if abs(x_offset) < 200:
-                    self.motion.stop()
+            if not danger_data:
+                return False
+        x_offset = danger_data["x_offset"]
+        if abs(x_offset) < 200:
+            self.motion.stop()
+            if danger_data["area"] > 50:
+                self.servo.grip()
+                time.sleep(1)
+                return True
+            else:
+                self.motion.move(1, 2)
+        else:
+            if x_offset > 0:
+                self.motion.turn(3, 45)
+            else:
+                self.motion.turn(-3, 45)
 
-                    if danger_data["area"] > 50:
-                        self.servo.grip()
-                        time.sleep(1)
-                        return True
-                    else:
-                        self.motion.move(1, 2)
-                else:
-                    if x_offset > 0:
-                        self.motion.turn(3, 45)
-                    else:
-                        self.motion.turn(-3, 45)    
-                res = self.perform_rescue()
-
-                if res:
-                    self.rescue_state.is_figure_held = True
-                    self.motion.turn(180, 180)
+        return False
                     
     def calculate_weighted_error(self, path_points):
         """Calculate weighted error based on multiple look-ahead points"""
@@ -540,8 +535,9 @@ class VisionProcessor:
                     print("blue detected")
                     self.motion.stop()
                     time.sleep(2.5)
-                
-                res = self.perform_rescue()
+
+                if danger_data:
+                    res = self.perform_rescue()
 
                 if res:
                     self.rescue_state.is_figure_held = True
