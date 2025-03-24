@@ -206,7 +206,9 @@ class VisionProcessor:
             return None
         
         blue_contour = max(contours, key=cv2.contourArea)
-        if cv2.contourArea(blue_contour) < 300:  
+        area = cv2.contourArea(blue_contour)  
+        
+        if area < 300:  
             return None
         
         M = cv2.moments(blue_contour)
@@ -230,6 +232,7 @@ class VisionProcessor:
         alignment_data = {
             'contour': blue_contour, 
             'center': center,
+            'area': area,
             'leftmost': leftmost,
             'rightmost': rightmost,
             'width': rightmost[0] - leftmost[0],
@@ -296,7 +299,7 @@ class VisionProcessor:
                 if abs(x_offset) < 200:
                     self.motion.stop()
 
-                    if danger_data["area"] > 1000:
+                    if danger_data["area"] > 100:
                         self.servo.grip()
                         time.sleep(1)
                         return True
