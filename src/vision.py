@@ -14,7 +14,7 @@ from helpers.vision import get_dot_locations
 FEED_WAIT_DELAY_MS = 1
 FRAME_SAMPLE_DELAY_S = 0.1
 PX_TO_CM = 13 / 640
-CORRECTION_SCALE_FACTOR = 0.01
+CORRECTION_SCALE_FACTOR = 0.05
 SHOW_IMAGES = os.environ.get("SHOW_IMAGE_WINDOW") == "true"
 #MIN_SPEED = 0.05
 #MAX_SPEED = 0.35
@@ -37,7 +37,7 @@ class VisionProcessor:
         self.running = False
         self.capture = cv2.VideoCapture(0, cv2.CAP_V4L2) # use v4l2 video capture for rpi
         self.rescue_state = RescueState()
-        self.pid_controller = PIDController(kp=2.5, ki=0.02, kd= 0.3, scale_factor=CORRECTION_SCALE_FACTOR)
+        self.pid_controller = PIDController(kp=2.5, ki=0.00, kd= 0.7, scale_factor=CORRECTION_SCALE_FACTOR)
         self.motion = motion
         self.capture_config = config_params
 
