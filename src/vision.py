@@ -299,7 +299,7 @@ class VisionProcessor:
                 if abs(x_offset) < 200:
                     self.motion.stop()
 
-                    if danger_data["area"] > 100:
+                    if danger_data["area"] > 50:
                         self.servo.grip()
                         time.sleep(1)
                         return True
