@@ -66,4 +66,4 @@ try:
         servo.max()
         sleep(1)
 except KeyboardInterrupt:
-    print("Exiting...")
+    print("Exiting....")
