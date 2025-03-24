@@ -15,9 +15,11 @@ from motion import MotionController
 from models.devices import devices
 
 motion = MotionController(devices)
+servo = ServoController()
 
 vp = VisionProcessor(
     motion,
+    servo,
     {
         cv2.CAP_PROP_FRAME_WIDTH: 640,
         cv2.CAP_PROP_FRAME_HEIGHT: 480,
