@@ -5,7 +5,7 @@ import os
 from models.devices import DeviceConfiguration
 from models.wheel import Wheel
 from helpers.motion import assert_speed
-from parameters.class_param import DEFAULT_SPEED 
+from parameters.class_param import *
 #from parameters.home_param import DEFAULT_SPEED
 DEBUG = os.environ.get("DEBUG") == "true"
 
