@@ -11,7 +11,7 @@ class ServoController:
         self.active_flag = is_active
 
     def set_servo_angle(self, angle):
-        self.servo.value = angle
+        self.servo.min()
 
     def release_grip(self):
         if self.active_flag == True:
@@ -20,5 +20,5 @@ class ServoController:
 
     def grip(self):
         if self.active_flag == False:
-            self.set_servo_angle(90)
+            self.set_servo_angle(0.9)
             self.set_servo_state(True)
