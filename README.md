@@ -32,3 +32,7 @@ pip install RPi.GPIO
 The project has been configured to work on PCs by using the GPIO Zero MockPinFactory.
 
 After starting in Desktop mode, the program waits for an `f` keypress, which behaves as the action button on the physical hardware. To exit the program, use `Ctrl-C`.
+
+
+## SSH Connection password
+MMEpi202410
