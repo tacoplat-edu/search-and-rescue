@@ -541,10 +541,9 @@ class VisionProcessor:
 
                 if danger_data:
                     res = self.perform_rescue()
-
-                if res:
-                    self.rescue_state.is_figure_held = True
-                    self.motion.turn(180, 180)
+                    if res:
+                        self.rescue_state.is_figure_held = True
+                        self.motion.turn(180, 180)
                 
             # Look for green only
             elif (
