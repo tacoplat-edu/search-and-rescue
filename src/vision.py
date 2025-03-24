@@ -12,6 +12,9 @@ from pid_control import PIDController
 from models.wheel import Wheel
 from helpers.vision import get_dot_locations
 
+from parameters.class_param import *
+#from parameters.home_param import *
+
 FEED_WAIT_DELAY_MS = 1
 FRAME_SAMPLE_DELAY_S = 0.1
 PX_TO_CM = 13 / 640
@@ -40,7 +43,7 @@ class VisionProcessor:
         self.running = False
         self.capture = cv2.VideoCapture(0, cv2.CAP_V4L2) # use v4l2 video capture for rpi
         self.rescue_state = RescueState()
-        self.pid_controller = PIDController(kp=2.5, ki=0.00, kd= 1.8, scale_factor=CORRECTION_SCALE_FACTOR)
+        self.pid_controller = PIDController(kp=KP, ki=KI, kd= KD, scale_factor=CORRECTION_SCALE_FACTOR)
         self.servo = servo
         self.motion = motion
         self.capture_config = config_params
@@ -58,14 +61,14 @@ class VisionProcessor:
 
         # tune these for adjusting turn timing - higher = turn earlier
         self.lookahead_rows = [
-            int(height * 0.85),  # Near
-            int(height * 0.7),   # Mid
-            int(height * 0.55),  # Far
-            int(height * 0.4)    # Very far
+            int(height * NEAR_LOCATION),  # Near
+            int(height * MID_LOCATION),   # Mid
+            int(height * FAR_LOCATION),  # Far
+            int(height * VERY_FAR_LOCATION)    # Very far
         ]
 
         # Adjust weights to include the new point
-        self.lookahead_weights = [0.4, 0.25, 0.2, 0.15]
+        self.lookahead_weights = LOOKAHEAD_WEIGHTS
 
         # Bird's eye view perspective transform
         self.setup_perspective_transform(width, height)
