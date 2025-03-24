@@ -1,54 +1,69 @@
-import os
-#import keyboard
-from signal import pause
+# import os
+# #import keyboard
+# from signal import pause
 
-os.environ["OPENCV_VIDEOIO_MSMF_ENABLE_HW_TRANSFORMS"] = "0"
-os.environ["SHOW_IMAGE_WINDOW"] = "false"
-import cv2
-from dotenv import load_dotenv
-load_dotenv()
+# os.environ["OPENCV_VIDEOIO_MSMF_ENABLE_HW_TRANSFORMS"] = "0"
+# os.environ["SHOW_IMAGE_WINDOW"] = "false"
+# import cv2
+# from dotenv import load_dotenv
+# load_dotenv()
 
-from vision import VisionProcessor
-from servo import ServoController
-from motion import MotionController
+# from vision import VisionProcessor
+# from servo import ServoController
+# from motion import MotionController
 
-from models.devices import devices
+# from models.devices import devices
 
-motion = MotionController(devices)
-servo = ServoController()
+# motion = MotionController(devices)
+# servo = ServoController()
 
-vp = VisionProcessor(
-    motion,
-    servo,
-    {
-        cv2.CAP_PROP_FRAME_WIDTH: 640,
-        cv2.CAP_PROP_FRAME_HEIGHT: 480,
-    },
-)
+# vp = VisionProcessor(
+#     motion,
+#     servo,
+#     {
+#         cv2.CAP_PROP_FRAME_WIDTH: 640,
+#         cv2.CAP_PROP_FRAME_HEIGHT: 480,
+#     },
+# )
 
-button = devices.action_button
-def press_handler():
-   print("what the sigma")
-   vp.run()
-   #vp.running = False
-button.when_pressed = press_handler
+# button = devices.action_button
+# def press_handler():
+#    print("what the sigma")
+#    vp.run()
+#    #vp.running = False
+# button.when_pressed = press_handler
 
-#vp.run()
-""" 
-if os.environ.get("DEBUG") == "true":
-    try:
-        while True:
-            state = button.pin.state
-            if keyboard.read_key() == "f":
-                if state:
-                    button.pin.drive_low()
-                else:
-                    button.pin.drive_high()
-    except KeyboardInterrupt:
-        print("Stopped")
-    finally:
-        devices.servo_motor.close()
-        devices.action_button.close()
-else:
-    pass """
-pause()
+# #vp.run()
+# """ 
+# if os.environ.get("DEBUG") == "true":
+#     try:
+#         while True:
+#             state = button.pin.state
+#             if keyboard.read_key() == "f":
+#                 if state:
+#                     button.pin.drive_low()
+#                 else:
+#                     button.pin.drive_high()
+#     except KeyboardInterrupt:
+#         print("Stopped")
+#     finally:
+#         devices.servo_motor.close()
+#         devices.action_button.close()
+# else:
+#     pass """
+# pause()
+from gpiozero import Servo
+from time import sleep
+
+servo = Servo(27)  # GPIO pin number (BCM numbering)
+
+try:
+    while True:
+        servo.mid()
+        sleep(1)
+        servo.min()
+        sleep(1)
+        servo.max()
+        sleep(1)
+except KeyboardInterrupt:
+    print("Exiting...")
