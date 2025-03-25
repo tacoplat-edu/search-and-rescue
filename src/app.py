@@ -62,13 +62,13 @@ servo = Servo(18)  # GPIO pin number (BCM numbering)
 try:
     while True:
         servo.mid()
-        print("mid")
+        print("mid", servo.value)
         sleep(1)
         servo.min()
-        print("min")
+        print("min", servo.value)
         sleep(1)
         servo.max()
-        print("max")
+        print("max", servo.value)
         sleep(1)
         print("powering servo")
 except KeyboardInterrupt:
