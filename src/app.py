@@ -57,7 +57,7 @@ from gpiozero.pins.lgpio import LGPIOFactory
 
 from time import sleep
 factory = LGPIOFactory(chip=0)
-servo = Servo(18,pin_factory=factory)  # GPIO pin number (BCM numbering)
+#servo = Servo(18,pin_factory=factory)  # GPIO pin number (BCM numbering)
 angularservo = AngularServo(18,pin_factory=factory)
 try:
     while True:
