@@ -52,38 +52,18 @@
 # else:
 #     pass """
 # pause()
-# from gpiozero import Servo
-# from time import sleep
-# servo = Servo(13)  # GPIO pin number (BCM numbering)
-
-# try:
-#     while True:
-#         servo.mid()
-#         sleep(1)
-#         servo.min()
-#         sleep(1)
-#         servo.max()
-#         sleep(1)
-#         print("powering servo")
-# except KeyboardInterrupt:
-#     print("Exiting....")
-import RPi.GPIO as GPIO
-import time
-
-GPIO.setmode(GPIO.BCM)
-GPIO.setup(13, GPIO.OUT)
-
-pwm = GPIO.PWM(13, 50)  # 50Hz for standard servo
-pwm.start(7.5)  # Middle position (duty cycle ~7.5%)
+from gpiozero import Servo
+from time import sleep
+servo = Servo(18)  # GPIO pin number (BCM numbering)
 
 try:
     while True:
-        pwm.ChangeDutyCycle(7.5)  # Middle
-        time.sleep(1)
-        pwm.ChangeDutyCycle(5.0)  # Min
-        time.sleep(1)
-        pwm.ChangeDutyCycle(10.0) # Max
-        time.sleep(1)
+        servo.mid()
+        sleep(1)
+        servo.min()
+        sleep(1)
+        servo.max()
+        sleep(1)
+        print("powering servo")
 except KeyboardInterrupt:
-    pwm.stop()
-    GPIO.cleanup()
+    print("Exiting....")
