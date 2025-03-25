@@ -3,7 +3,7 @@ import os
 from dataclasses import dataclass
 
 # external imports
-from gpiozero import Device, Motor, Button, Servo, RotaryEncoder
+from gpiozero import Device, Motor, Button, AngularServo, RotaryEncoder
 from gpiozero.pins.mock import MockFactory, MockPWMPin
 
 
@@ -31,7 +31,7 @@ devices = (
             Wheel.LEFT: RotaryEncoder(26,25, max_steps=9000),
             Wheel.RIGHT: RotaryEncoder(23,24, max_steps=9000),
         },
-        servo_motor=Servo(13),
+        servo_motor=AngularServo(18, min_angle=-0.90, max_angle=0.90),
         action_button=Button(16, pull_up=True),
     )
 )
