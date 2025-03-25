@@ -52,20 +52,23 @@
 # else:
 #     pass """
 # pause()
-from gpiozero import Servo, AngularServo
+from gpiozero import Servo
 from gpiozero.pins.lgpio import LGPIOFactory
-
 from time import sleep
-factory = LGPIOFactory(chip=0)
-#servo = Servo(18,pin_factory=factory)  # GPIO pin number (BCM numbering)
-angularservo = AngularServo(18,pin_factory=factory)
+
+servo = Servo(18)  # GPIO pin number (BCM numbering)
+
+
 try:
     while True:
-        angularservo.angle = 20
+        servo.mid()
+        print("mid")
         sleep(1)
-        angularservo.angle = 45
+        servo.min()
+        print("min")
         sleep(1)
-        angularservo.angle = 70
+        servo.max()
+        print("max")
         sleep(1)
         print("powering servo")
 except KeyboardInterrupt:
