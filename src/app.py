@@ -52,25 +52,3 @@ if os.environ.get("DEBUG") == "true":
 else:
     pass """
 pause()
-
-# from gpiozero import Servo, AngularServo
-# from gpiozero.pins.lgpio import LGPIOFactory
-
-# from time import sleep
-# #servo = Servo(18,pin_factory=factory)  # GPIO pin number (BCM numbering)
-# angularservo = AngularServo(18, max_angle=90, min_angle=0)
-# try:
-#     while True:
-#         angularservo.min()
-#         print("min", angularservo.value)
-#         #sleep(1)
-#         #angularservo.mid()
-#         #print("mid", angularservo.value)
-#         #sleep(1)
-#         #angularservo.max()
-#         #print("max", angularservo.value)
-#         sleep(1)
-#         print("powering servo")
-# except KeyboardInterrupt:
-#     print("Exiting....")
-

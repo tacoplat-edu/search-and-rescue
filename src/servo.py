@@ -5,13 +5,13 @@ class ServoController:
     def __init__(self) -> None:
         self.active_flag = False
         self.servo = devices.servo_motor
-      #  self.servo.angle = 0  # Initialize the servo angle
+        self.servo.angle = 0  # Initialize the servo angle
 
     def set_servo_state(self, is_active: bool):
         self.active_flag = is_active
 
     def set_servo_angle(self, angle):
-        self.servo.max()
+        self.servo.angle = angle
 
     def release_grip(self):
         if self.active_flag == True:
