@@ -24,6 +24,7 @@ CORRECTION_SCALE_FACTOR = 0.01
 SHOW_IMAGES = os.environ.get("SHOW_IMAGE_WINDOW") == "true"
 MIN_SPEED = 0.05
 MAX_SPEED = 0.35
+MAX_CORRECTION = 0.35
 #TURN_SPEED = 0.40
 
 class VisionProcessor:
@@ -439,7 +440,7 @@ class VisionProcessor:
             center_x = width // 2
 
             if birds_eye is not None:
-                binary_mask, path_mask = self.get_path_mask(birds_eye)
+                binary_mask, path_mask = self.get_path_mask(display)
                 path_contour, path_points = self.get_path_points_with_lookahead(binary_mask)
             else:
                 binary_mask, path_mask = self.get_path_mask(image)
@@ -536,9 +537,15 @@ class VisionProcessor:
                 near_error, far_error, weighted_error, all_errors = self.calculate_weighted_error(path_points)
                 
                 if weighted_error is not None:
-                    correction = self.pid_controller.compute_correction(weighted_error)
+                    correction = min(self.pid_controller.compute_correction(weighted_error), MAX_CORRECTION)
                     
                     # Apply correction to motor speeds
+                    # Below only works IF WE DO NOT HAVE TIGHT TURNS
+                    # if weighted_error < 0.5:
+                    #     default_speed = 0.28
+                    # else:
+                    #     default_speed = self.motion.default_speed
+                        
                     left_speed = max(min(default_speed + correction, 1), 0)
                     right_speed = max(min(default_speed - correction, 1),0)
                     
@@ -597,38 +604,43 @@ class VisionProcessor:
                         self.rescue_state.is_figure_held = True
                         self.motion.set_forward_speed(ROUTINE_TURN_SPEED, Wheel.LEFT)  
                         self.motion.set_reverse_speed(ROUTINE_TURN_SPEED, Wheel.RIGHT)
-                        path_contour = None
+                        time.sleep(ROUTINE_TURN_TIME)
+                        """path_contour = None
                         while path_contour is None:
                             _, image = self.capture.read()
                             _, path_mask = self.get_path_mask(image)
-                            path_contour = self.detect_special_contours(path_mask, threshold=6000)
+                            path_contour = self.detect_special_contours(path_mask, threshold=6000)"""
                         self.motion.stop()
-                        time.sleep(2)
+                        self.motion.set_forward_speed(ROUTINE_SPEED)
+                        time.sleep(ROUTINE_RETURN_TIME)
                         self.pid_controller.reset()
+                        left_speed = right_speed = 0.1
                 
-                print(f"Setting speeds: L={left_speed:.2f}, R={right_speed:.2f}")
-                self.motion.set_forward_speed(left_speed, Wheel.LEFT)
-                self.motion.set_forward_speed(right_speed, Wheel.RIGHT)
-            
 
             else:
                 # Need to run recalibration algorithm
 
-                print(f"Cant see line, last error is {self.last_error}")
-                default_speed = self.motion.default_speed
-                if self.last_error < 0:
-                    left_speed = -0.15
-                    right_speed = 0.15
-                    print("Last seen line on left, moving right wheel")
-                else:
-                    left_speed = 0.15
-                    right_speed = -0.15 
-                    print("Last seen line on right, moving left wheel")
+                #print(f"Cant see line, last error is {self.last_error}")
+                #default_speed = self.motion.default_speed
+               # if self.last_error < 0:
+                #    left_speed = -0.15
+                #    right_speed = 0.15
+                #    print("Last seen line on left, moving right wheel")
+               # else:
+                #    left_speed = 0.15
+                 #   right_speed = -0.15 
+                  #  print("Last seen line on right, moving left wheel")
                 
-                print(f"Recovery speeds: L={left_speed:.2f}, R={right_speed:.2f}")
+               # print(f"Recovery speeds: L={left_speed:.2f}, R={right_speed:.2f}")
                 
-                self.motion.set_forward_speed(speed=left_speed, wheel= Wheel.LEFT)
-                self.motion.set_forward_speed(speed=right_speed, wheel = Wheel.RIGHT)
+               # self.motion.set_forward_speed(speed=left_speed, wheel= Wheel.LEFT)
+               # self.motion.set_forward_speed(speed=right_speed, wheel = Wheel.RIGHT)
+               pass
+
+            print(f"Setting speeds: L={left_speed:.2f}, R={right_speed:.2f}")
+            self.motion.set_forward_speed(left_speed, Wheel.LEFT)
+            self.motion.set_forward_speed(right_speed, Wheel.RIGHT)
+            
             
             if self.detect_finish_line_and_stop_if_detected(path_contour):
                 raise FinishedException
