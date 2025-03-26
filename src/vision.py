@@ -329,6 +329,7 @@ class VisionProcessor:
         for i, point in valid_points:
             ref_point = self.reference_locs[i]
             error = (point[0] - ref_point[0]) * PX_TO_CM
+            print("error:", error)
             errors.append((i, error))
         
         # If we don't have all points, adjust weights
@@ -430,6 +431,7 @@ class VisionProcessor:
             cv2.namedWindow("Bird's Eye View", cv2.WINDOW_NORMAL)
 
         self.motion.start(self.motion.default_speed)
+        self.servo.set_servo_angle(120)
 
         while self.running:
             _, image = self.capture.read()  # camera frame, BGR
@@ -665,4 +667,5 @@ class VisionProcessor:
 
         if self.capture is not None and self.capture.isOpened():
             self.capture.release()
+        self.servo.set_servo_angle(0)
         cv2.destroyAllWindows()

@@ -3,7 +3,7 @@ import os
 from signal import pause
 
 os.environ["OPENCV_VIDEOIO_MSMF_ENABLE_HW_TRANSFORMS"] = "0"
-os.environ["SHOW_IMAGE_WINDOW"] = "true"
+os.environ["SHOW_IMAGE_WINDOW"] = "false"
 import cv2
 from dotenv import load_dotenv
 load_dotenv()
