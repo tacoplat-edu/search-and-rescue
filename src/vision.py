@@ -10,18 +10,20 @@ from servo import ServoController
 from models.rescue import RescueState
 from pid_control import PIDController
 from models.wheel import Wheel
+from models.finished import FinishedException
 from helpers.vision import get_dot_locations
 
 #from parameters.home_param import *
-from parameters.class_param import *
+#from src.parameters.game_day_param import *
+from parameters.bay_param import *
 
 FEED_WAIT_DELAY_MS = 1
-FRAME_SAMPLE_DELAY_S = 0.1
+FRAME_SAMPLE_DELAY_S = 0
 PX_TO_CM = 13 / 640
-CORRECTION_SCALE_FACTOR = 0.009
+CORRECTION_SCALE_FACTOR = 0.01
 SHOW_IMAGES = os.environ.get("SHOW_IMAGE_WINDOW") == "true"
-#MIN_SPEED = 0.05
-#MAX_SPEED = 0.35
+MIN_SPEED = 0.05
+MAX_SPEED = 0.35
 #TURN_SPEED = 0.40
 
 class VisionProcessor:
@@ -374,6 +376,16 @@ class VisionProcessor:
             return primary_contour, locs if locs else None 
 
         return None, None
+    
+    def detect_finish_line_and_stop_if_detected(self, contour):
+        _,_,w,h = cv2.boundingRect(contour)
+
+        """ if h <= 120:
+            self.motion.stop()
+            self.servo.set_servo_angle(120)
+            return True """
+        
+        return False
 
     def calibrate(self):
         while True:
@@ -527,8 +539,8 @@ class VisionProcessor:
                     correction = self.pid_controller.compute_correction(weighted_error)
                     
                     # Apply correction to motor speeds
-                    left_speed = default_speed + correction
-                    right_speed = default_speed - correction
+                    left_speed = max(min(default_speed + correction, 1), 0)
+                    right_speed = max(min(default_speed - correction, 1),0)
                     
                     # Display visualization information if showing images
                     if SHOW_IMAGES:
@@ -615,8 +627,12 @@ class VisionProcessor:
                 
                 print(f"Recovery speeds: L={left_speed:.2f}, R={right_speed:.2f}")
                 
-                self.motion.set_forward_speed(left_speed, Wheel.LEFT)
-                self.motion.set_forward_speed(right_speed, Wheel.RIGHT)
+                self.motion.set_forward_speed(speed=left_speed, wheel= Wheel.LEFT)
+                self.motion.set_forward_speed(speed=right_speed, wheel = Wheel.RIGHT)
+            
+            if self.detect_finish_line_and_stop_if_detected(path_contour):
+                raise FinishedException
+
             # Display images if enabled
             if SHOW_IMAGES:
                 cv2.imshow("Image", display)
