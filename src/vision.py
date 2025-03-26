@@ -18,7 +18,7 @@ from parameters.class_param import *
 FEED_WAIT_DELAY_MS = 1
 FRAME_SAMPLE_DELAY_S = 0.1
 PX_TO_CM = 13 / 640
-CORRECTION_SCALE_FACTOR = 0.01
+CORRECTION_SCALE_FACTOR = 0.009
 SHOW_IMAGES = os.environ.get("SHOW_IMAGE_WINDOW") == "true"
 #MIN_SPEED = 0.05
 #MAX_SPEED = 0.35
@@ -129,8 +129,8 @@ class VisionProcessor:
             
         hsv_image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
         
-        red1_lower, red1_upper = np.uint8([0, 70, 20]), np.uint8([15, 255, 255])
-        red2_lower, red2_upper = np.uint8([155, 70, 20]), np.uint8([180, 255, 255])
+        red1_lower, red1_upper = np.uint8([0, 70, 70]), np.uint8([10, 255, 255])
+        red2_lower, red2_upper = np.uint8([160, 70, 70]), np.uint8([180, 255, 255])
         
         mask1 = cv2.inRange(hsv_image, red1_lower, red1_upper)
         mask2 = cv2.inRange(hsv_image, red2_lower, red2_upper)
@@ -601,36 +601,22 @@ class VisionProcessor:
 
             else:
                 # Need to run recalibration algorithm
-                # self.blind_frames += 1
-                # if self.blind_frames < self.max_blind_recovery:
-                #     print(f"Cant see line, last error is {self.last_error}")
 
-                #     default_speed = self.motion.default_speed
-
-                #     if self.last_error < 0:
-                #         left_speed = MIN_SPEED
-                #         right_speed = min(MAX_SPEED, default_speed - self.last_correction)
-                #         print("Last seen line on left, moving right wheel")
-                #     else:
-                #         left_speed = min(MAX_SPEED, default_speed + self.last_correction)
-                #         right_speed = MIN_SPEED 
-                #         print("Last seen line on right, moving left wheel")
-                    
-                #     print(f"Recovery speeds: L={left_speed:.2f}, R={right_speed:.2f}")
-                    
-                #     self.motion.set_forward_speed(left_speed, Wheel.LEFT)
-                #     self.motion.set_forward_speed(right_speed, Wheel.RIGHT)
-                    
-                # else:
-                #     print("Spinning to find line")
-                #     if self.last_error < 0:
-                #         self.motion.set_reverse_speed(TURN_SPEED, Wheel.LEFT)
-                #         self.motion.set_forward_speed(TURN_SPEED, Wheel.RIGHT)
-                #     else:
-                #         self.motion.set_forward_speed(TURN_SPEED, Wheel.LEFT)
-                #         self.motion.set_reverse_speed(TURN_SPEED, Wheel.RIGHT)
-                pass
-
+                print(f"Cant see line, last error is {self.last_error}")
+                default_speed = self.motion.default_speed
+                if self.last_error < 0:
+                    left_speed = -0.15
+                    right_speed = 0.15
+                    print("Last seen line on left, moving right wheel")
+                else:
+                    left_speed = 0.15
+                    right_speed = -0.15 
+                    print("Last seen line on right, moving left wheel")
+                
+                print(f"Recovery speeds: L={left_speed:.2f}, R={right_speed:.2f}")
+                
+                self.motion.set_forward_speed(left_speed, Wheel.LEFT)
+                self.motion.set_forward_speed(right_speed, Wheel.RIGHT)
             # Display images if enabled
             if SHOW_IMAGES:
                 cv2.imshow("Image", display)
