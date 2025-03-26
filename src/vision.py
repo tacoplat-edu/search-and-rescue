@@ -290,29 +290,12 @@ class VisionProcessor:
         
         return primary_contour, path_points
     
-    def perform_rescue(self,danger_data=None):
-        if danger_data is None:
-            _, image = self.capture.read()
-            danger_data = self.get_danger_data(image)
-            
-            if not danger_data:
-                return False
-        x_offset = danger_data["x_offset"]
-        if abs(x_offset) < 200:
-            self.motion.stop()
-            if danger_data["area"] > 50:
-                self.servo.grip()
-                time.sleep(1)
-                return True
-            else:
-                self.motion.move(1, 2)
-        else:
-            if x_offset > 0:
-                self.motion.turn(3, 45)
-            else:
-                self.motion.turn(-3, 45)
-
-        return False
+    def perform_rescue(self,speed: float = 0.12, stop_time: float = 2.5):
+        self.motion.set_forward_speed(speed)
+        time.sleep(stop_time)
+        self.motion.stop()
+        self.servo.set_servo_angle(0)
+        return True
                     
     def calculate_weighted_error(self, path_points):
         """Calculate weighted error based on multiple look-ahead points"""
@@ -453,7 +436,7 @@ class VisionProcessor:
             danger_mask = self.get_danger_mask(image)
             safe_mask = self.get_safe_mask(image)
             danger_data = self.get_danger_data(image)
-            danger = self.detect_special_contours(danger_mask, 153600)
+            danger = self.detect_special_contours(danger_mask, 103600)
             safe = self.detect_special_contours(safe_mask, 153600)
             # Draw contours onto the frame
           
@@ -531,37 +514,8 @@ class VisionProcessor:
                 self.motion.devices.wheel_motors[Wheel.RIGHT].value,
             )
 
-            # Look for blue only
-            if (
-                not self.rescue_state.is_rescue_complete
-                and not self.rescue_state.is_figure_held
-            ):
-                if danger is not None:
-                    print("blue detected")
-                    self.motion.stop()
-                    time.sleep(2.5)
-
-                if danger_data:
-                    res = self.perform_rescue()
-                    if res:
-                        self.rescue_state.is_figure_held = True
-                        self.motion.turn(180, 180)
-                
+     
             # Look for green only
-            elif (
-                not self.rescue_state.is_rescue_complete
-                and self.rescue_state.is_figure_held
-            ):
-                if safe is not None:
-                    print("green detected")
-                    self.motion.stop()
-                    time.sleep(2.5)
-                    self.motion.move(-45, 6)
-                    self.rescue_state.is_rescue_complete = True
-
-                    time.sleep(2)
-                    break
-
             # Always look for red if not for the other two colours
             
             # Handle line following with PID control
@@ -616,6 +570,29 @@ class VisionProcessor:
                     self.last_error = weighted_error
                     self.last_correction = correction
                     self.blind_frames = 0
+            # Look for blue only
+            if (
+                not self.rescue_state.is_rescue_complete
+                and not self.rescue_state.is_figure_held
+            ):
+                if danger is not None:
+                    print("blue detected")
+                    self.motion.stop()
+                    time.sleep(2)
+
+                    res = self.perform_rescue(ROUTINE_SPEED, ROUTINE_STOP_TIME)
+                    if res:
+                        self.rescue_state.is_figure_held = True
+                        self.motion.set_forward_speed(ROUTINE_TURN_SPEED, Wheel.LEFT)  
+                        self.motion.set_reverse_speed(ROUTINE_TURN_SPEED, Wheel.RIGHT)
+                        path_contour = None
+                        while path_contour is None:
+                            _, image = self.capture.read()
+                            _, path_mask = self.get_path_mask(image)
+                            path_contour = self.detect_special_contours(path_mask, threshold=6000)
+                        self.motion.stop()
+                        time.sleep(2)
+                        self.pid_controller.reset()
                 
                 print(f"Setting speeds: L={left_speed:.2f}, R={right_speed:.2f}")
                 self.motion.set_forward_speed(left_speed, Wheel.LEFT)

@@ -12,9 +12,9 @@ DEBUG = os.environ.get("DEBUG") == "true"
 
 MAX_SPEED = 109.96 # [cm/s]
 PULSES_PER_REVOLUTION = 420
-GEAR_RATIO = 30
+GEAR_RATIO = 1
 
-LOOP_DELAY_S = 0.01
+LOOP_DELAY_S = 0.1
 
 class MotionController:
     devices: DeviceConfiguration
@@ -82,7 +82,7 @@ class MotionController:
                     abs(self.devices.wheel_encoders[Wheel.LEFT].steps),
                     abs(self.devices.wheel_encoders[Wheel.RIGHT].steps)
                 )
-
+                print(current_steps, target_steps)
                 if current_steps >= target_steps:
                     break
 
@@ -98,6 +98,18 @@ class MotionController:
         return True
 
     def move(self, distance: float, speed: float):
+        time_to_sleep = distance / speed
+        normalized_speed = abs(speed) / MAX_SPEED + 0.1
+
+        if distance > 0:
+            self.set_forward_speed(normalized_speed)
+        else:
+            self.set_reverse_speed(normalized_speed)
+
+        time.sleep(time_to_sleep)
+        return True
+
+    def move_deprecated(self, distance: float, speed: float):
         """
         Parameters
         ----------
@@ -106,9 +118,21 @@ class MotionController:
         speed : float
             The desired speed in cm/s
         """
-        self.reset_encoders()
+        print('before')
+        print(self.devices.wheel_encoders[Wheel.LEFT].max_steps)
+        print(self.devices.wheel_encoders[Wheel.LEFT].steps)
+        print(self.devices.wheel_encoders[Wheel.LEFT].value)
+        print(self.devices.wheel_encoders[Wheel.LEFT])
+        #self.reset_encoders()
+        print('after')
+        print(self.devices.wheel_encoders[Wheel.LEFT].max_steps)
+        print(self.devices.wheel_encoders[Wheel.LEFT].steps)
+        print(self.devices.wheel_encoders[Wheel.LEFT].value)
+        print(self.devices.wheel_encoders[Wheel.LEFT])
 
-        normalized_speed = abs(speed) / MAX_SPEED
+        time.sleep(2)
+
+        normalized_speed = abs(speed) / MAX_SPEED + 0.1
 
         rotations_needed = math.ceil(abs(distance) / self.wheel_circumference)
         target_steps = int(rotations_needed * PULSES_PER_REVOLUTION * GEAR_RATIO)
@@ -118,7 +142,7 @@ class MotionController:
         else:
             self.set_reverse_speed(normalized_speed)
 
-        def ease(remaining_factor):
+        """ def ease(remaining_factor):
             # Proportional deceleration; slow down for last 20% of turn
             reduced_speed = normalized_speed * max(0.3, remaining_factor)
             
@@ -127,8 +151,19 @@ class MotionController:
             else:
                 self.set_reverse_speed(reduced_speed)
 
-        res = self.wait_for_action(target_steps, ease)
-        return res
+        res = self.wait_for_action(target_steps, ease) """
+
+        while True:
+            current_steps = max(
+                abs(self.devices.wheel_encoders[Wheel.LEFT].steps),
+                abs(self.devices.wheel_encoders[Wheel.RIGHT].steps)
+            )
+            print(current_steps, target_steps)
+            if current_steps >= target_steps:
+                break
+
+            time.sleep(LOOP_DELAY_S)
+        return True
 
     def turn(self, angle: float, angular_speed: float):
         """
