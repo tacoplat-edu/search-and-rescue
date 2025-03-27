@@ -40,3 +40,9 @@ class PIDController:
         correction = p + i + d
         return correction
     
+    def get_derror(self, error):
+        if self.prev_error == 0:
+            return float("inf")
+        print("gde", error, self.prev_error)
+        return abs(error - self.prev_error)
+    

@@ -38,8 +38,8 @@ class MotionController:
     @assert_speed
     def set_forward_speed(self, speed: float, wheel: Wheel = Wheel.BOTH):
         if wheel == Wheel.BOTH:
-            self.set_forward_speed(speed, Wheel.LEFT)
-            self.set_forward_speed(speed, Wheel.RIGHT)
+            self.devices.wheel_motors[Wheel.LEFT].forward(speed)
+            self.devices.wheel_motors[Wheel.RIGHT].forward(speed)
         elif wheel == Wheel.LEFT:
             self.devices.wheel_motors[Wheel.LEFT].forward(speed)
         else:

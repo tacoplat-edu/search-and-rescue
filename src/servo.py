@@ -13,19 +13,25 @@ class ServoController:
         self.active_flag = False
         self.servo = devices.servo_motor
         self.servo.angle = 0  # Initialize the servo angle
+        self.last_angle = 0
         self.last_servo_update = 0
-        self.servo_hold_interval = 0.25
+        self.servo_hold_interval = 0.5
+        self.servo.detach()
 
     def set_servo_state(self, is_active: bool):
         self.active_flag = is_active
 
     def set_servo_angle(self, angle):
+        self.servo.angle = angle
+        self.last_angle = angle
+        self.servo.detach()
+
+    def refresh_servo(self):
         now = time.time()
         if now - self.last_servo_update > self.servo_hold_interval:
-            self.servo.angle = angle
+            self.servo.angle = self.last_angle
             self.last_servo_update = now
-        #time.sleep(0.5)
-        #self.servo.detach()
+        self.servo.detach()
 
     def release_grip(self):
         if self.active_flag == True:

@@ -132,8 +132,8 @@ class VisionProcessor:
             
         hsv_image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
         
-        red1_lower, red1_upper = np.uint8([0, 70, 70]), np.uint8([10, 255, 255])
-        red2_lower, red2_upper = np.uint8([160, 70, 70]), np.uint8([180, 255, 255])
+        red1_lower, red1_upper = np.uint8([0, 55, 55]), np.uint8([10, 255, 255])
+        red2_lower, red2_upper = np.uint8([160, 55, 55]), np.uint8([180, 255, 255])
         
         mask1 = cv2.inRange(hsv_image, red1_lower, red1_upper)
         mask2 = cv2.inRange(hsv_image, red2_lower, red2_upper)
@@ -177,7 +177,7 @@ class VisionProcessor:
 
         return cv2.bitwise_and(image, image, mask=mask)
 
-    def detect_special_contours(self, mask, threshold: int = 50):
+    def detect_special_contours(self, mask, threshold: int = 1):
         if mask is None:
             return None
 
@@ -294,7 +294,8 @@ class VisionProcessor:
         return primary_contour, path_points
     
     def perform_rescue(self,speed: float = 0.12, stop_time: float = 2.5):
-        self.motion.set_forward_speed(speed)
+        self.motion.set_forward_speed(speed, Wheel.LEFT)
+        self.motion.set_forward_speed(speed, Wheel.RIGHT)
         time.sleep(stop_time)
         self.motion.stop()
         self.servo.set_servo_angle(0)
@@ -391,30 +392,6 @@ class VisionProcessor:
                 self.servo.set_servo_angle(120)
                 return True 
         return False
-    
-    def calibrate(self):
-        while True:
-            _, image = self.capture.read()  # camera frame BGR
-
-            path_mask = self.get_path_mask(image)
-            path, path_locs = self.get_path_data(path_mask)
-
-            deg_turned = 0
-            if not path:
-                self.motion.turn(30)
-                deg_turned += 30
-                if deg_turned % 360 == 0:
-                    self.motion.move(0.1)
-            else:
-                if path_locs is not None:
-                    dx = path_locs[-1][0] - self.reference_locs[-1][0]
-                    dy = int(image.shape[0] - self.reference_locs[-1][0])
-
-                    theta = math.atan(dx / dy)
-
-                    self.motion.turn(theta)
-
-                    return True
 
     def run(self):
         # Restart the stream if not already opened
@@ -428,7 +405,7 @@ class VisionProcessor:
         
         if SHOW_IMAGES:
             cv2.namedWindow("Image", cv2.WINDOW_NORMAL)
-           # cv2.namedWindow("Bird's Eye View", cv2.WINDOW_NORMAL)
+            #cv2.namedWindow("Bird's Eye View", cv2.WINDOW_NORMAL)
 
         self.motion.start(self.motion.default_speed)
         self.servo.set_servo_angle(120)
@@ -444,7 +421,7 @@ class VisionProcessor:
             center_x = width // 2
 
             if birds_eye is not None:
-                binary_mask, path_mask = self.get_path_mask(display)
+                binary_mask, path_mask = self.get_path_mask(image)
                 path_contour, path_points = self.get_path_points_with_lookahead(binary_mask)
             else:
                 binary_mask, path_mask = self.get_path_mask(image)
@@ -530,7 +507,6 @@ class VisionProcessor:
                 self.motion.devices.wheel_motors[Wheel.LEFT].value,
                 self.motion.devices.wheel_motors[Wheel.RIGHT].value,
             )
-
      
             # Look for green only
             # Always look for red if not for the other two colours
@@ -550,8 +526,8 @@ class VisionProcessor:
                     # else:
                     #     default_speed = self.motion.default_speed
                         
-                    left_speed = max(min(default_speed + correction, 1), 0)
-                    right_speed = max(min(default_speed - correction, 1),0)
+                    left_speed = max(min(default_speed + correction, 0.6), 0)
+                    right_speed = max(min(default_speed - correction, 0.6), 0)
                     
                     # Display visualization information if showing images
                     if SHOW_IMAGES:
@@ -590,6 +566,11 @@ class VisionProcessor:
                                             (0, 255, 255), 2)
                     
                     # Save the last successful error and correction
+                    """ if abs(weighted_error) < 0.25:
+                        self.motion.default_speed += 0.0015
+                    else:
+                        self.motion.default_speed = DEFAULT_SPEED """
+                    print("dspeed", self.motion.default_speed)
                     self.last_error = weighted_error
                     self.last_correction = correction
                     self.blind_frames = 0
@@ -609,11 +590,6 @@ class VisionProcessor:
                         self.motion.set_forward_speed(ROUTINE_TURN_SPEED, Wheel.LEFT)  
                         self.motion.set_reverse_speed(ROUTINE_TURN_SPEED, Wheel.RIGHT)
                         time.sleep(ROUTINE_TURN_TIME)
-                        """path_contour = None
-                        while path_contour is None:
-                            _, image = self.capture.read()
-                            _, path_mask = self.get_path_mask(image)
-                            path_contour = self.detect_special_contours(path_mask, threshold=6000)"""
                         self.motion.stop()
                         self.motion.set_forward_speed(ROUTINE_SPEED)
                         time.sleep(ROUTINE_RETURN_TIME)
@@ -641,10 +617,11 @@ class VisionProcessor:
                # self.motion.set_forward_speed(speed=right_speed, wheel = Wheel.RIGHT)
                pass
 
-            print(f"Setting speeds: L={left_speed:.2f}, R={right_speed:.2f}")
+           # print(f"Setting speeds: L={left_speed:.2f}, R={right_speed:.2f}")
             self.motion.set_forward_speed(left_speed, Wheel.LEFT)
             self.motion.set_forward_speed(right_speed, Wheel.RIGHT)
             
+            #self.servo.refresh_servo()
             
             if self.detect_finish_line_and_stop_if_detected(path_contour):
                 raise FinishedException
