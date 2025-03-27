@@ -14,8 +14,8 @@ from models.finished import FinishedException
 from helpers.vision import get_dot_locations
 
 #from parameters.home_param import *
-#from src.parameters.game_day_param import *
-from parameters.bay_param import *
+from parameters.game_day_param import *
+#from parameters.bay_param import *
 
 FEED_WAIT_DELAY_MS = 1
 FRAME_SAMPLE_DELAY_S = 0
@@ -128,7 +128,7 @@ class VisionProcessor:
     def get_path_mask(self, image):
         """Extract the red line from the image"""
         if image is None:
-            return None
+            return None, None
             
         hsv_image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
         
@@ -428,7 +428,7 @@ class VisionProcessor:
         
         if SHOW_IMAGES:
             cv2.namedWindow("Image", cv2.WINDOW_NORMAL)
-            cv2.namedWindow("Bird's Eye View", cv2.WINDOW_NORMAL)
+           # cv2.namedWindow("Bird's Eye View", cv2.WINDOW_NORMAL)
 
         self.motion.start(self.motion.default_speed)
         self.servo.set_servo_angle(120)
@@ -652,8 +652,8 @@ class VisionProcessor:
             # Display images if enabled
             if SHOW_IMAGES:
                 cv2.imshow("Image", display)
-                if birds_eye_display is not None:
-                    cv2.imshow("Bird's Eye View", birds_eye_display)
+                # if birds_eye_display is not None:
+                #     cv2.imshow("Bird's Eye View", birds_eye_display)
         
             if cv2.waitKey(FEED_WAIT_DELAY_MS) & 0xFF == ord("q"):
                 break
