@@ -158,7 +158,7 @@ class VisionProcessor:
             return None
         hsv_image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
 
-        blue_lower, blue_upper = np.uint8([100, 100, 30]), np.uint8([140, 255, 255])
+        blue_lower, blue_upper = np.uint8([90, 50, 20]), np.uint8([150, 255, 255])
         mask = cv2.inRange(hsv_image, blue_lower, blue_upper)
 
         return cv2.bitwise_and(image, image, mask=mask)
@@ -381,13 +381,17 @@ class VisionProcessor:
     def detect_finish_line_and_stop_if_detected(self, contour):
         _,_,w,h = cv2.boundingRect(contour)
 
-        """ if h <= 120:
-            self.motion.stop()
-            self.servo.set_servo_angle(120)
-            return True """
-        
+        if self.rescue_state.is_figure_held:
+            # self.motion.stop()
+            # self.servo.set_servo_angle(120)
+            # return True
+    
+            if w >= 640*0.7 and h <= 480*0.25:
+                self.motion.stop()
+                self.servo.set_servo_angle(120)
+                return True 
         return False
-
+    
     def calibrate(self):
         while True:
             _, image = self.capture.read()  # camera frame BGR
