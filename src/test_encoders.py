@@ -1,7 +1,15 @@
+import time
 from models.devices import devices
-from motion import MotionController
+from servo import ServoController
 
-motion = MotionController(devices)
+s = ServoController()
 
-motion.move(10, 10)
+s.set_servo_state(False)
+time.sleep(1)
+s.set_servo_state(True)
+time.sleep(1)
 
+s.set_servo_state(False)
+time.sleep(1)
+s.set_servo_state(True)
+time.sleep(1)

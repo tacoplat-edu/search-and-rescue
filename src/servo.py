@@ -1,44 +1,14 @@
 import time
-
-from gpiozero import AngularServo
 from models.devices import devices
 
 class ServoController:
-    servo: AngularServo
-
-    last_servo_update: float
-    servo_hold_interval: float
-
     def __init__(self) -> None:
-        self.active_flag = False
         self.servo = devices.servo_motor
-        self.servo.angle = 0  # Initialize the servo angle
-        self.last_angle = 0
-        self.last_servo_update = 0
-        self.servo_hold_interval = 0.5
-        self.servo.detach()
 
     def set_servo_state(self, is_active: bool):
-        self.active_flag = is_active
-
-    def set_servo_angle(self, angle):
-        self.servo.angle = angle
-        self.last_angle = angle
+        if is_active:
+            self.servo.angle = 0
+        else:
+            self.servo.angle = 120
+        time.sleep(0.5)
         self.servo.detach()
-
-    def refresh_servo(self):
-        now = time.time()
-        if now - self.last_servo_update > self.servo_hold_interval:
-            self.servo.angle = self.last_angle
-            self.last_servo_update = now
-        self.servo.detach()
-
-    def release_grip(self):
-        if self.active_flag == True:
-            self.set_servo_angle = 0
-            self.set_servo_state(False)
-
-    def grip(self):
-        if self.active_flag == False:
-            self.set_servo_angle(0.9)
-            self.set_servo_state(True)

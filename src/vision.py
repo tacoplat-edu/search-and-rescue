@@ -158,7 +158,7 @@ class VisionProcessor:
             return None
         hsv_image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
 
-        blue_lower, blue_upper = np.uint8([90, 50, 20]), np.uint8([150, 255, 255])
+        blue_lower, blue_upper = np.uint8([98, 50, 20]), np.uint8([148, 255, 255])
         mask = cv2.inRange(hsv_image, blue_lower, blue_upper)
 
         return cv2.bitwise_and(image, image, mask=mask)
@@ -298,7 +298,7 @@ class VisionProcessor:
         self.motion.set_forward_speed(speed, Wheel.RIGHT)
         time.sleep(stop_time)
         self.motion.stop()
-        self.servo.set_servo_angle(0)
+        self.servo.set_servo_state(True)
         return True
                     
     def calculate_weighted_error(self, path_points):
@@ -383,13 +383,9 @@ class VisionProcessor:
         _,_,w,h = cv2.boundingRect(contour)
 
         if self.rescue_state.is_figure_held:
-            # self.motion.stop()
-            # self.servo.set_servo_angle(120)
-            # return True
-    
             if w >= 640*0.7 and h <= 480*0.25:
                 self.motion.stop()
-                self.servo.set_servo_angle(120)
+                self.servo.set_servo_state(False)
                 return True 
         return False
 
@@ -408,7 +404,7 @@ class VisionProcessor:
             #cv2.namedWindow("Bird's Eye View", cv2.WINDOW_NORMAL)
 
         self.motion.start(self.motion.default_speed)
-        self.servo.set_servo_angle(120)
+        self.servo.set_servo_state(False)
 
         while self.running:
             _, image = self.capture.read()  # camera frame, BGR
@@ -430,7 +426,7 @@ class VisionProcessor:
             danger_mask = self.get_danger_mask(image)
             safe_mask = self.get_safe_mask(image)
             danger_data = self.get_danger_data(image)
-            danger = self.detect_special_contours(danger_mask, 103600)
+            danger = self.detect_special_contours(danger_mask, 3000)
             safe = self.detect_special_contours(safe_mask, 153600)
             # Draw contours onto the frame
           
@@ -525,9 +521,13 @@ class VisionProcessor:
                     #     default_speed = 0.28
                     # else:
                     #     default_speed = self.motion.default_speed
-                        
-                    left_speed = max(min(default_speed + correction, 0.6), 0)
-                    right_speed = max(min(default_speed - correction, 0.6), 0)
+                    if abs(weighted_error) > 4:
+                        default_speed = 0.07877
+                    else:
+                        default_speed = self.motion.default_speed
+                      
+                    left_speed = max(min(default_speed + correction, 0.57), 0)
+                    right_speed = max(min(default_speed - correction, 0.57), 0)
                     
                     # Display visualization information if showing images
                     if SHOW_IMAGES:
@@ -570,7 +570,6 @@ class VisionProcessor:
                         self.motion.default_speed += 0.0015
                     else:
                         self.motion.default_speed = DEFAULT_SPEED """
-                    print("dspeed", self.motion.default_speed)
                     self.last_error = weighted_error
                     self.last_correction = correction
                     self.blind_frames = 0
@@ -582,7 +581,7 @@ class VisionProcessor:
                 if danger is not None:
                     print("blue detected")
                     self.motion.stop()
-                    time.sleep(2)
+                    time.sleep(0.5)
 
                     res = self.perform_rescue(ROUTINE_SPEED, ROUTINE_STOP_TIME)
                     if res:
@@ -598,30 +597,28 @@ class VisionProcessor:
                 
 
             else:
-                # Need to run recalibration algorithm
+                """ # Need to run recalibration algorithm
 
-                #print(f"Cant see line, last error is {self.last_error}")
-                #default_speed = self.motion.default_speed
-               # if self.last_error < 0:
-                #    left_speed = -0.15
-                #    right_speed = 0.15
-                #    print("Last seen line on left, moving right wheel")
-               # else:
-                #    left_speed = 0.15
-                 #   right_speed = -0.15 
-                  #  print("Last seen line on right, moving left wheel")
+                print(f"Cant see line, last error is {self.last_error}")
+                default_speed = self.motion.default_speed
+                if self.last_error < 0:
+                   left_speed = -0.15
+                   right_speed = 0.15
+                   print("Last seen line on left, moving right wheel")
+                else:
+                   left_speed = 0.15
+                   right_speed = -0.15 
+                   print("Last seen line on right, moving left wheel")
                 
-               # print(f"Recovery speeds: L={left_speed:.2f}, R={right_speed:.2f}")
+                print(f"Recovery speeds: L={left_speed:.2f}, R={right_speed:.2f}")
                 
-               # self.motion.set_forward_speed(speed=left_speed, wheel= Wheel.LEFT)
-               # self.motion.set_forward_speed(speed=right_speed, wheel = Wheel.RIGHT)
-               pass
+                self.motion.set_forward_speed(speed=left_speed, wheel= Wheel.LEFT)
+                self.motion.set_forward_speed(speed=right_speed, wheel = Wheel.RIGHT)
+                pass """
 
            # print(f"Setting speeds: L={left_speed:.2f}, R={right_speed:.2f}")
             self.motion.set_forward_speed(left_speed, Wheel.LEFT)
             self.motion.set_forward_speed(right_speed, Wheel.RIGHT)
-            
-            #self.servo.refresh_servo()
             
             if self.detect_finish_line_and_stop_if_detected(path_contour):
                 raise FinishedException
@@ -639,5 +636,5 @@ class VisionProcessor:
 
         if self.capture is not None and self.capture.isOpened():
             self.capture.release()
-        self.servo.set_servo_angle(0)
+        self.servo.set_servo_state(True)
         cv2.destroyAllWindows()
