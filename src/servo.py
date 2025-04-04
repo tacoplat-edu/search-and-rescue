@@ -12,3 +12,8 @@ class ServoController:
             self.servo.angle = 120
         time.sleep(0.5)
         self.servo.detach()
+
+    def set_servo_angle(self, angle: float):
+        self.servo.angle = angle
+        time.sleep(0.5)
+        self.servo.detach()

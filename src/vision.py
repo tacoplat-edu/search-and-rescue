@@ -299,6 +299,11 @@ class VisionProcessor:
         time.sleep(stop_time)
         self.motion.stop()
         self.servo.set_servo_state(True)
+        """ self.servo.set_servo_angle(90)
+        self.servo.set_servo_angle(60)
+        self.servo.set_servo_angle(30)
+        self.servo.set_servo_angle(0) """
+        self.motion.default_speed = DEFAULT_SPEED + RET_SPEED_INC
         return True
                     
     def calculate_weighted_error(self, path_points):
@@ -316,7 +321,7 @@ class VisionProcessor:
         for i, point in valid_points:
             ref_point = self.reference_locs[i]
             error = (point[0] - ref_point[0]) * PX_TO_CM
-            print("error:", error)
+           # print("error:", error)
             errors.append((i, error))
         
         # If we don't have all points, adjust weights
@@ -498,11 +503,11 @@ class VisionProcessor:
             right_speed = default_speed
             correction = 0
             
-            print(
-                "motor state",
-                self.motion.devices.wheel_motors[Wheel.LEFT].value,
-                self.motion.devices.wheel_motors[Wheel.RIGHT].value,
-            )
+            # print(
+            #     "motor state",
+            #     self.motion.devices.wheel_motors[Wheel.LEFT].value,
+            #     self.motion.devices.wheel_motors[Wheel.RIGHT].value,
+            # )
      
             # Look for green only
             # Always look for red if not for the other two colours
@@ -513,6 +518,8 @@ class VisionProcessor:
                 near_error, far_error, weighted_error, all_errors = self.calculate_weighted_error(path_points)
                 
                 if weighted_error is not None:
+
+                    print("Weighted error:", weighted_error)
                     correction = min(self.pid_controller.compute_correction(weighted_error), MAX_CORRECTION)
                     
                     # Apply correction to motor speeds
@@ -521,13 +528,13 @@ class VisionProcessor:
                     #     default_speed = 0.28
                     # else:
                     #     default_speed = self.motion.default_speed
-                    if abs(weighted_error) > 4:
-                        default_speed = 0.07877
+                    if abs(weighted_error) > SLOWDOWN_THRESHHOLD:
+                        default_speed = TURN_SPEED
                     else:
                         default_speed = self.motion.default_speed
                       
-                    left_speed = max(min(default_speed + correction, 0.57), 0)
-                    right_speed = max(min(default_speed - correction, 0.57), 0)
+                    left_speed = max(min(default_speed + correction, 0.55), 0)
+                    right_speed = max(min(default_speed - correction, 0.55), 0)
                     
                     # Display visualization information if showing images
                     if SHOW_IMAGES:
@@ -586,14 +593,27 @@ class VisionProcessor:
                     res = self.perform_rescue(ROUTINE_SPEED, ROUTINE_STOP_TIME)
                     if res:
                         self.rescue_state.is_figure_held = True
+                        #self.motion.set_reverse_speed(0.16)
+                        self.motion.stop()
+                        time.sleep(1)
+                        #time.sleep(ROUTINE_RETURN_TIME + 0.9)
                         self.motion.set_forward_speed(ROUTINE_TURN_SPEED, Wheel.LEFT)  
                         self.motion.set_reverse_speed(ROUTINE_TURN_SPEED, Wheel.RIGHT)
-                        time.sleep(ROUTINE_TURN_TIME)
-                        self.motion.stop()
-                        self.motion.set_forward_speed(ROUTINE_SPEED)
-                        time.sleep(ROUTINE_RETURN_TIME)
-                        self.pid_controller.reset()
-                        left_speed = right_speed = 0.1
+                        i, limit = 0, 5000
+                        while True:
+                            _, internal_image = self.capture.read()
+                            print("in loop")
+                            _, path_mask_int = self.get_path_mask(internal_image)
+                            path_contour_int = self.detect_special_contours(path_mask_int, 5000)
+                            i += 1
+                            if path_contour_int is not None or i > limit:
+                                print("loop broken")
+                                self.motion.stop()
+                                break
+                        #time.sleep(ROUTINE_TURN_TIME)
+                        #self.motion.stop()
+                        #self.pid_controller.reset()
+                        #left_speed = right_speed = 0.1
                 
 
             else:
